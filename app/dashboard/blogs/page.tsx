@@ -4,8 +4,11 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Table, Button, Modal, Form, Input, message, Upload, Spin, Card, Row, Col, Statistic } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
+
+
 import axios from "axios";
 import Link from "next/link";
+import SlateEditor from "@/components/ui/SlateEditor";
 
 const fetchBlogs = async () => {
   const { data } = await axios.get("http://localhost:3000/blogs");
@@ -26,7 +29,9 @@ const uploadImage = async (file) => {
   return data.secure_url;
 };
 
+
 export default function BlogsPage() {
+
   const queryClient = useQueryClient();
   const { data: blogs, isLoading } = useQuery({ queryKey: ["blogs"], queryFn: fetchBlogs });
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -110,6 +115,7 @@ export default function BlogsPage() {
         confirmLoading={mutation.isLoading}
 
       >
+
         <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item name="title" label="Title" rules={[{ required: true, message: "Title is required" }]}>
             <Input />
@@ -120,8 +126,8 @@ export default function BlogsPage() {
           <Form.Item name="about" label="About">
             <Input />
           </Form.Item>
-          <Form.Item name="description" label="Description">
-            <Input.TextArea rows={4} />
+          <Form.Item name="description" >
+          <SlateEditor />
           </Form.Item>
           <Form.Item label="Upload Image">
             <Upload beforeUpload={beforeUpload} fileList={fileList} showUploadList={{ showRemoveIcon: false }}>
