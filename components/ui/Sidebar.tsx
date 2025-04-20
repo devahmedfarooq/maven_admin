@@ -2,7 +2,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Menu } from "antd";
-import { HomeOutlined, ReadOutlined, UserOutlined, BookOutlined, AppstoreOutlined, TagsOutlined } from "@ant-design/icons";
+import { HomeOutlined, ReadOutlined, UserOutlined, BookOutlined, AppstoreOutlined, TagsOutlined, LogoutOutlined } from "@ant-design/icons";
+import { logout } from "@/app/actions/auth";
+
+
 
 const items = [
   { key: "", label: "Home", icon: <HomeOutlined /> },
@@ -11,13 +14,18 @@ const items = [
   { key: "bookings", label: "Bookings", icon: <BookOutlined /> },
   { key: "blogs", label: "Blogs", icon: <ReadOutlined /> },
   { key: "items", label: "Items", icon: <AppstoreOutlined /> },
+  {key : "logout", label : "Log out", icon : <LogoutOutlined />}
 ];
 
 export default function SidebarMenu() {
   const router = useRouter();
   const [selectedKey, setSelectedKey] = useState("home");
 
-  const handleClick = (e) => {
+  const handleClick = async (e:any) => {
+    if(e.key == 'logout') {
+      await logout()
+      return 
+    }
     setSelectedKey(e.key);
     router.push(`/dashboard/${e.key}`); // Redirect to corresponding page
   };

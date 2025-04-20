@@ -1,66 +1,102 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Form, Input, Button, Typography, Card, message, Spin } from 'antd';
-import { useMutation } from '@tanstack/react-query';
-import axios from '@/services/apis/api';
+import { useActionState, useEffect, useRef } from 'react';
+import { redirect, useRouter } from 'next/navigation';
+import { Typography, Card, message, Spin } from 'antd';
+import { SigninFormState } from '@/app/lib/definations';
+import { signin } from '@/app/actions/auth';
 
 const { Title } = Typography;
 
 const AuthPage = () => {
-    const [loading, setLoading] = useState(false);
+    const initialState: SigninFormState = {
+        error: { email: [], password: [] }
+    };
+    
+    const [state, formAction, isPending] = useActionState(signin, initialState);
+
     const router = useRouter();
 
-    const loginMutation = useMutation({
-        mutationFn: (values: { email: string; password: string }) => axios.post('/auth/login', values),
-        onSuccess: (response) => {
-            const data = response.data.token;
-            if (data) {
-                console.log("token", data.token)
-                localStorage.setItem('authToken', data.token);
-                message.success(response.data.message || 'Login successful!');
-                setLoading(true);
-                setTimeout(() => router.push('/dashboard'), 1500);
-            } else {
-                message.error('No token received');
-            }
-        },
-        onError: (error) => {
-            if (error.response?.status === 404) {
-                message.error('Endpoint not found (404)');
-            } else {
-                message.error(error.response?.data?.message || 'Something went wrong');
-            }
-        },
-    });
+    const firstRender = useRef(true);
 
-    const onFinish = async (values: { email: string; password: string }) => {
-        loginMutation.mutate(values);
-    };
+    useEffect(() => {
+        if (firstRender.current) {
+            firstRender.current = false;
+            return;
+        }
+    
+        if (!isPending) {
+            if (state?.msg) {
+                message.success(state.msg);
+
+                redirect('/dashboard')
+            } else if (state?.error && (state.error.email.length > 0 || state.error.password.length > 0)) {
+                const emailErrors = state.error.email.join('\n');
+                const passwordErrors = state.error.password.join('\n');
+                message.error(`Login Failed:\n${emailErrors}\n${passwordErrors}`);
+            }
+        }
+    }, [state, isPending]);
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-100">
-            {loading ? (
+            {isPending ? (
                 <Spin size="large" />
             ) : (
                 <Card className="w-96 shadow-lg p-6">
                     <Title level={3} className="text-center">
                         MAVEN APP ADMIN PANEL - Login
                     </Title>
-                    <Form layout="vertical" onFinish={onFinish}>
-                        <Form.Item label="Email" name="email" rules={[{ required: true, type: 'email' }]}>
-                            <Input placeholder="Enter your email" />
-                        </Form.Item>
-                        <Form.Item label="Password" name="password" rules={[{ required: true }]}>
-                            <Input.Password placeholder="Enter your password" />
-                        </Form.Item>
-                        <Form.Item>
-                            <Button type="primary" htmlType="submit" loading={loginMutation.isLoading} block>
-                                Login
-                            </Button>
-                        </Form.Item>
-                    </Form>
+                    <form action={formAction}>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label htmlFor="email">Email</label><br />
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="Enter your email"
+                                required
+                                style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                            />
+                            {state?.error?.email?.map((err, i) => (
+                                <p key={i} style={{ color: 'red', margin: 0 }}>{err}</p>
+                            ))}
+                        </div>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label htmlFor="password">Password</label><br />
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Enter your password"
+                                required
+                                style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                            />
+                            {state?.error?.password?.map((err, i) => (
+                                <p key={i} style={{ color: 'red', margin: 0 }}>{err}</p>
+                            ))}
+                        </div>
+
+                        <div>
+                            <button
+                                type="submit"
+                                style={{
+                                    width: '100%',
+                                    padding: '10px',
+                                    backgroundColor: '#1890ff',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer'
+                                }}
+                                disabled={isPending}
+                            >
+                                {isPending ? 'Logging in...' : 'Login'}
+                            </button>
+                        </div>
+                    </form>
                 </Card>
             )}
         </div>
