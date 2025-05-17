@@ -35,6 +35,7 @@ export default function ItemsPage() {
             title: "Type",
             dataIndex: "type",
             key: "type",
+            render : (category) => category && category.name  ? <p>{category.name}</p> : <p>N/A</p>
         },
         {
             title: "Price",

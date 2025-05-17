@@ -2,12 +2,36 @@
 
 import { Modal, Form, Input, Button, InputNumber, Select, Space } from "antd";
 import { useCreateItem } from "@/services/apis/items";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import backendAPI from '@/services/apis/api'
 
 const { Option } = Select;
 
+type Categories = {
+    name : string
+    hasSubType : boolean
+    subName : string[]
+    _id:string
+}
+
 export default function CreateItemModal({ visible, onClose, onItemCreated, setIsModalVisible }) {
     const [form] = Form.useForm();
+    const [categories,setCategoires] = useState<Categories[]>([])
+
+
+    useEffect(() => {
+        async function fetchData () {
+            try {
+            const {data,status} = await backendAPI.get<Categories[]>('/category')
+            setCategoires(data)
+          //  console.log(data,status)
+            } catch (error) {
+                console.log(`Error Fetching Categories : `,error.message)
+            }
+
+        }
+        fetchData()
+    },[])
 
     const createItem = useCreateItem();
 
@@ -83,10 +107,12 @@ export default function CreateItemModal({ visible, onClose, onItemCreated, setIs
                 </Form.Item>
 
                 <Form.Item name="type" label="Type" rules={[{ required: true, message: "Type is required" }]}>
-                    <Select>
-                        <Option value="hotel">Hotel</Option>
-                        <Option value="cars">Cars</Option>
-                        <Option value="service">Service</Option>
+                    <Select disabled={categories.length == 0 }>
+                        
+                        {categories.length == 0  && <Option value="">None</Option>}
+                        {
+                            categories.map(category => <Option key={category._id} value={`${category._id}`}>{category.name}</Option>)
+                        }
                     </Select>
                 </Form.Item>
 
