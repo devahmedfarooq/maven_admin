@@ -2,7 +2,7 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Card, Descriptions, Spin, Typography, Alert, Row, Col, Button } from "antd";
+import { Card, Descriptions, Spin, Typography, Alert, Row, Col, Button, Select } from "antd";
 import api from "@/services/apis/api";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
@@ -26,10 +26,21 @@ const deleteBookingById = async (id: string, router: AppRouterInstance) => {
     const response = await api.delete(`/booking/${id}`)
     router.replace(`/dashboard/bookings`)
   } catch (error) {
-
+    console.log(error)
   }
 }
 
+const updateBookingById = async (id: string, status: string) => {
+  try {
+    const response = await api.patch(`/booking/${id}`, {
+      status
+    })
+
+  } catch (error) {
+    console.log(error)
+
+  }
+}
 export default function BookingDetailsPage() {
   const { id }: { id: string } = useParams(); // Get ID from URL
   const router = useRouter()
@@ -59,10 +70,24 @@ export default function BookingDetailsPage() {
     <Card>
       <Row justify={"space-between"}>
         <Col span={8}><Title level={2}>Booking Details</Title></Col>
-        <Col span={8}>
+        <Col span={8} >
           <Button color="danger" onClick={() => deleteBookingById(id!, router)} variant="solid">
             Delete
           </Button>
+          <Select onChange={(e) => updateBookingById(id!, e)} style={{ margin: "0 4px" }} defaultValue={data.status}>
+            <Select.Option value="pending">
+              Pending
+            </Select.Option>
+            <Select.Option value="contacted">
+              Contacted
+            </Select.Option>
+            <Select.Option value="declinded">
+              Declinded
+            </Select.Option>
+            <Select.Option value="confirmed">
+              Confirmed
+            </Select.Option>
+          </Select>
         </Col>
       </Row>
 
@@ -81,10 +106,11 @@ export default function BookingDetailsPage() {
         <Descriptions.Item label="GST">Rs {data.summary?.gst || "N/A"}</Descriptions.Item>
         <Descriptions.Item label="Total">Rs {data.summary?.total || "N/A"}</Descriptions.Item>
 
-        <Descriptions.Item label="ID Proof (Front)">{data.personalInfo?.idproof?.idCardfront || "N/A"}</Descriptions.Item>
+        {/*         <Descriptions.Item label="ID Proof (Front)">{data.personalInfo?.idproof?.idCardfront || "N/A"}</Descriptions.Item>
         <Descriptions.Item label="ID Proof (Back)">{data.personalInfo?.idproof?.idCardback || "N/A"}</Descriptions.Item>
         <Descriptions.Item label="Passport">{data.personalInfo?.idproof?.passport || "N/A"}</Descriptions.Item>
-      </Descriptions>
+      */}
+       </Descriptions>
     </Card>
   );
 }

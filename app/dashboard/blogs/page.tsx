@@ -126,8 +126,8 @@ export default function BlogsPage() {
           <Form.Item name="about" label="About">
             <Input />
           </Form.Item>
-          <Form.Item name="description" >
-          <SlateEditor />
+          <Form.Item name="description" label="Description" >
+          <Input.TextArea />
           </Form.Item>
           <Form.Item label="Upload Image">
             <Upload beforeUpload={beforeUpload} fileList={fileList} showUploadList={{ showRemoveIcon: false }}>

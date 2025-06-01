@@ -135,16 +135,10 @@ export default function Page() {
     });
 
     // Filtered notifications
-    const filteredNotifications = stats.notifications.filter((notif) =>
-        notificationFilter === "all" ? true : notif.type.toLowerCase() === notificationFilter.toLowerCase()
-    ).map(notif => ({
-        ...notif,
-        key: notif._id
-    }));
+    const filteredNotifications = stats.notifications
 
     // Notification table columns
     const notificationColumns = [
-        { title: 'Type', dataIndex: 'type', key: 'type' },
         { title: 'Message', dataIndex: 'message', key: 'message' },
         { title: 'Time', dataIndex: 'createdAt', key: 'createdAt' },
     ];
@@ -193,25 +187,13 @@ export default function Page() {
                                     <Statistic title="Total Users" value={stats.userStats.totalUsers} prefix={<UserOutlined />} />
                                 </Card>
                             </Col>
-                            <Col span={6}>
-                                <Card>
-                                    <Statistic title="Total Subscribed" value={stats.userStats.subscribedUsers} prefix={<CheckCircleOutlined />} />
-                                </Card>
-                            </Col>
-                            <Col span={6}>
-                                <Card>
-                                    <Statistic title="Total Unsubscribed" value={stats.userStats.unsubscribedUsers} prefix={<CloseCircleOutlined />} />
-                                </Card>
-                            </Col>
+
                             <Col span={6}>
                                 <Card>
                                     <Statistic title="Total Ads" value={stats.adsStats.totalAds} prefix={<AppstoreOutlined />} />
                                 </Card>
                             </Col>
-                        </Row>
 
-                        {/* More Stats */}
-                        <Row gutter={[16, 16]} className="mb-6">
                             <Col span={6}>
                                 <Card>
                                     <Statistic title="Total Items" value={stats.totalItems} prefix={<ShoppingOutlined />} />
@@ -223,7 +205,6 @@ export default function Page() {
                                 </Card>
                             </Col>
                         </Row>
-
                         {/* Charts Section */}
                         <Row gutter={[16, 16]} className="mb-6">
                             <Col span={12}>
@@ -255,30 +236,13 @@ export default function Page() {
                             </Col>
                         </Row>
 
-                        {/* Subscription Trends */}
-                        <Row gutter={[16, 16]} className="mb-6">
-                            <Col span={24}>
-                                <Card title="Subscription Trend (Monthly)">
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={stats.subscriptionTrend}>
-                                            <XAxis dataKey="name" />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Legend />
-                                            <Bar dataKey="subscribed" fill="#4CAF50" name="Subscribed" />
-                                            <Bar dataKey="unsubscribed" fill="#F44336" name="Unsubscribed" />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </Card>
-                            </Col>
-                        </Row>
-
+                      
                         {/* Notifications */}
                         <Row gutter={[16, 16]}>
                             <Col span={24}>
                                 <Card 
                                     title={<><BellOutlined /> Notifications</>} 
-                                    extra={
+                                   /*  extra={
                                         <Select
                                             defaultValue="all"
                                             style={{ width: 150 }}
@@ -291,7 +255,7 @@ export default function Page() {
                                                 { value: "Item", label: "Items" },
                                             ]}
                                         />
-                                    }
+                                    } */
                                 >
                                     <Table 
                                         dataSource={filteredNotifications}

@@ -61,6 +61,7 @@ interface Item {
   title: string
   subtitle?: string
   type?: Category | string
+  subType?: string
   location?: string
   about?: string
   imgs: string[]
@@ -94,7 +95,6 @@ export default function EditableItemPage() {
     fetchCategories()
   }, [])
 
-
   const fetchItem = async () => {
     try {
       const response = await axios.get<Item>(`/items/${id}`)
@@ -110,11 +110,32 @@ export default function EditableItemPage() {
   useEffect(() => {
     if (!id) return
     fetchItem()
-  }, [id,saving])
+  }, [id, saving])
 
   // Handle field changes
   const handleChange = (key: keyof Item, value: any) => {
     if (!item) return
+    // Special handling for type changes
+    if (key === "type" && value !== (item.type as any)?._id) {
+      // Find the selected category
+      const selectedCategory = categories.find((cat) => cat._id === value)
+
+      // If changing type and the new type doesn't support subtypes or has different subtypes,
+      // reset the subType field
+      if (
+        !selectedCategory?.hasSubType ||
+        (typeof item.type === "object" &&
+          item.type.hasSubType &&
+          !selectedCategory.subName.includes(item.subType || ""))
+      ) {
+        setItem((prev) =>
+          prev
+            ? { ...prev, [key]: value, subType: selectedCategory?.hasSubType ? selectedCategory.subName[0] : "" }
+            : null,
+        )
+        return
+      }
+    }
     setItem((prev) => (prev ? { ...prev, [key]: value } : null))
   }
 
@@ -197,6 +218,7 @@ export default function EditableItemPage() {
       const response = await axios.patch(`/items/${id}`, {
         ...item,
         imgs: [...originalItem.imgs, ...imgs],
+        type : item.type
       })
 
       message.success("Item updated successfully!")
@@ -335,6 +357,28 @@ export default function EditableItemPage() {
               item.type.name
             ) : (
               item.type || "N/A"
+            )}
+          </Paragraph>
+          <Paragraph>
+            <strong>SubType:</strong>{" "}
+            {isEditing && typeof item.type === "object" && item.type.hasSubType ? (
+              <Select
+                value={item.subType || ""}
+                onChange={(value) => handleChange("subType", value)}
+                style={{ width: "100%" }}
+                placeholder="Select subtype"
+                disabled={!item.type || typeof item.type !== "object" || !item.type.hasSubType}
+              >
+                {typeof item.type === "object" &&
+                  item.type.subName &&
+                  item.type.subName.map((subName) => (
+                    <Select.Option key={subName} value={subName}>
+                      {subName}
+                    </Select.Option>
+                  ))}
+              </Select>
+            ) : (
+              item.subType || "N/A"
             )}
           </Paragraph>
         </Col>

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Menu } from "antd";
-import { HomeOutlined, ReadOutlined, UserOutlined, BookOutlined, AppstoreOutlined, TagsOutlined, LogoutOutlined } from "@ant-design/icons";
+import { HomeOutlined, ReadOutlined, UserOutlined, BookOutlined, AppstoreOutlined, TagsOutlined, LogoutOutlined, BoxPlotTwoTone, BoxPlotOutlined } from "@ant-design/icons";
 import { logout } from "@/app/actions/auth";
 
 
@@ -12,6 +12,7 @@ const items = [
   { key: "ads", label: "Ads", icon: <TagsOutlined /> },
   { key: "users", label: "Users", icon: <UserOutlined /> },
   { key: "bookings", label: "Bookings", icon: <BookOutlined /> },
+  { key: "category", label: "Category", icon: <BoxPlotOutlined /> },
   { key: "blogs", label: "Blogs", icon: <ReadOutlined /> },
   { key: "items", label: "Items", icon: <AppstoreOutlined /> },
   {key : "logout", label : "Log out", icon : <LogoutOutlined />}

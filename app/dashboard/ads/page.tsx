@@ -18,6 +18,7 @@ interface AdsImage {
     viewed?: number;
     href: string;
     campinStart?: Date;
+    active? : boolean
 }
 
 interface CreateAdsDto {
@@ -32,6 +33,7 @@ interface UpdateAdsDto {
     ads?: UpdateAdsImageDto[];
     clicked?: number;
     viewed?: number;
+    active? : boolean
 }
 
 interface PaginationData {
@@ -51,6 +53,7 @@ interface GetAdsDto {
     endDate?: Date;
     minClicks?: number;
     minViews?: number;
+    active? : boolean
 }
 
 const getBase64 = (file: File): Promise<string> =>
@@ -128,7 +131,8 @@ const AdsPage = () => {
                         href: ad.ads?.[0]?.href || '',
                         campinStart: ad.ads?.[0]?.campinStart || null,
                         clicked: ad.clicked || 0,
-                        viewed: ad.viewed || 0
+                        viewed: ad.viewed || 0,
+                        active :ad.ads?.[0]?.active || false
                     })),
                     pagination: data.pagination
                 };
@@ -430,6 +434,12 @@ const AdsPage = () => {
                     </Tooltip>
                 </Space>
             )
+        },
+        {
+            title : "Status",
+            key : "active",
+            dataIndex : "active",
+            render : (_: any, record: AdsImage) => record.active ? "Active" : "In-active"
         },
         {
             title: "Actions",

@@ -1,13 +1,12 @@
 "use client"
 import { useEffect, useState } from "react";
-import { Form, Input, Card, Space, message, DatePicker, Upload, Alert, Button, Skeleton } from "antd";
+import { Form, Input, Card, Space, message, DatePicker, Upload, Alert, Button, Skeleton, Switch } from "antd";
 import { PlusOutlined, LoadingOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from "@/services/apis/api";
 import dayjs from 'dayjs';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { useRouter } from 'next/navigation';
-import { useParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 interface AdsImage {
     imgSrc: string;
@@ -16,6 +15,7 @@ interface AdsImage {
     viewed?: number;
     href: string;
     campinStart?: Date;
+    active?: boolean;
 }
 
 interface UpdateAdsImageDto extends Partial<AdsImage> {}
@@ -63,7 +63,8 @@ const EditAdPage = () => {
                     href: data.ads?.[0]?.href || '',
                     campinStart: data.ads?.[0]?.campinStart || null,
                     clicked: data.clicked || 0,
-                    viewed: data.viewed || 0
+                    viewed: data.viewed || 0,
+                    active: data.ads?.[0]?.active || false,
                 };
             } catch (error) {
                 throw error;
@@ -110,20 +111,17 @@ const EditAdPage = () => {
                         imgSrc: values.imgSrc,
                         title: values.title,
                         href: values.href,
-                        // Ensure we're sending a proper Date object and handle undefined case
                         campinStart: values.campinStart 
                             ? (values.campinStart instanceof Date 
                                 ? values.campinStart 
                                 : new Date(values.campinStart))
-                            : undefined
+                            : undefined,
+                        active: values.active,
                     }],
                     clicked: values.clicked,
                     viewed: values.viewed
                 };
 
-                // Log the date for debugging
-                console.log('Sending date:', dto.ads?.[0]?.campinStart);
-                
                 return await axios.patch(`/admin/ads/${id}`, dto);
             } catch (error) {
                 throw error;
@@ -158,6 +156,7 @@ const EditAdPage = () => {
             form.setFieldsValue({
                 ...ad,
                 campinStart: ad.campinStart ? dayjs(ad.campinStart) : undefined,
+                active: ad.active || false,
             });
         }
     }, [ad, form]);
@@ -183,9 +182,11 @@ const EditAdPage = () => {
 
             // Convert date to proper Date object
             if (finalValues.campinStart) {
-                // Convert from Dayjs to Date object
                 finalValues.campinStart = finalValues.campinStart.toDate();
             }
+
+            // Ensure active is included
+            finalValues.active = finalValues.active || false;
 
             await updateAdMutation.mutateAsync(finalValues);
         } catch (error) {
@@ -289,6 +290,14 @@ const EditAdPage = () => {
                         />
                     </Form.Item>
 
+                    <Form.Item
+                        name="active"
+                        label="Active Status"
+                        valuePropName="checked"
+                    >
+                        <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+                    </Form.Item>
+
                     <Form.Item>
                         <Space>
                             <Button 
@@ -309,4 +318,4 @@ const EditAdPage = () => {
     );
 };
 
-export default EditAdPage; 
+export default EditAdPage;
