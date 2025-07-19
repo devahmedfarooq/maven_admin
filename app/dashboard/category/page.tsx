@@ -18,6 +18,13 @@ import {
   Select,
 } from "antd"
 import { PlusOutlined, EditOutlined, DeleteOutlined, TagOutlined, SaveOutlined, CloseOutlined } from "@ant-design/icons"
+import { 
+  HomeOutlined, CarOutlined, LineOutlined, BellOutlined, 
+  RestOutlined, MedicineBoxOutlined, BookOutlined, 
+  ShopOutlined, ToolOutlined, HeartOutlined, StarOutlined,
+  CalendarOutlined, UserOutlined, SettingOutlined,
+  SearchOutlined, MenuOutlined, GiftOutlined, TrophyOutlined
+} from "@ant-design/icons"
 import axios from "@/services/apis/api"
 
 const { TabPane } = Tabs
@@ -28,11 +35,21 @@ interface Category {
   name: string
   hasSubType: boolean
   subName: string[]
+  appointmentDateLabel?: string
+  appointmentTimeLabel?: string
+  appointmentDescription?: string
+  requiresAppointment?: boolean
+  icon?: string
 }
 
 interface CategoryFormValues {
   name: string
   hasSubType: boolean
+  appointmentDateLabel: string
+  appointmentTimeLabel: string
+  appointmentDescription: string
+  requiresAppointment: boolean
+  icon: string
 }
 
 interface SubCategoryFormValues {
@@ -76,6 +93,11 @@ export default function CategoryManagement() {
         category: {
           name: values.name,
           hasSubType: values.hasSubType,
+          appointmentDateLabel: values.appointmentDateLabel,
+          appointmentTimeLabel: values.appointmentTimeLabel,
+          appointmentDescription: values.appointmentDescription,
+          requiresAppointment: values.requiresAppointment,
+          icon: values.icon,
         },
       })
       message.success("Category created successfully")
@@ -95,6 +117,11 @@ export default function CategoryManagement() {
       await axios.patch(`/category/${editingCategory._id}`, {
         name: values.name,
         hasSubType: values.hasSubType,
+        appointmentDateLabel: values.appointmentDateLabel,
+        appointmentTimeLabel: values.appointmentTimeLabel,
+        appointmentDescription: values.appointmentDescription,
+        requiresAppointment: values.requiresAppointment,
+        icon: values.icon,
       })
       message.success("Category updated successfully")
       setCategoryModalVisible(false)
@@ -159,6 +186,13 @@ export default function CategoryManagement() {
   const showCreateCategoryModal = () => {
     setEditingCategory(null)
     categoryForm.resetFields()
+    categoryForm.setFieldsValue({
+      appointmentDateLabel: "Appointment Date",
+      appointmentTimeLabel: "Appointment Time",
+      appointmentDescription: "Select your preferred appointment date and time",
+      requiresAppointment: true,
+      icon: "", // Initialize icon field
+    })
     setCategoryModalVisible(true)
   }
 
@@ -167,6 +201,11 @@ export default function CategoryManagement() {
     categoryForm.setFieldsValue({
       name: category.name,
       hasSubType: category.hasSubType,
+      appointmentDateLabel: category.appointmentDateLabel || "Appointment Date",
+      appointmentTimeLabel: category.appointmentTimeLabel || "Appointment Time",
+      appointmentDescription: category.appointmentDescription || "Select your preferred appointment date and time",
+      requiresAppointment: category.requiresAppointment !== false,
+      icon: category.icon || "", // Set icon field
     })
     setCategoryModalVisible(true)
   }
@@ -179,6 +218,18 @@ export default function CategoryManagement() {
   // Table columns
   const categoryColumns = [
     {
+      title: "Icon",
+      dataIndex: "icon",
+      key: "icon",
+      width: 80,
+      render: (icon: string) => {
+        if (!icon) return <span style={{ color: "#999" }}>No icon</span>
+        // You can import and use the actual icon component here
+        // For now, we'll show the icon name
+        return <span style={{ fontFamily: "monospace" }}>{icon}</span>
+      },
+    },
+    {
       title: "Name",
       dataIndex: "name",
       key: "name",
@@ -189,6 +240,21 @@ export default function CategoryManagement() {
       dataIndex: "hasSubType",
       key: "hasSubType",
       render: (hasSubType: boolean) => (hasSubType ? "Yes" : "No"),
+    },
+    {
+      title: "Appointment Settings",
+      key: "appointmentSettings",
+      render: (_: any, record: Category) => (
+        <div>
+          <div><strong>Requires Appointment:</strong> {record.requiresAppointment !== false ? "Yes" : "No"}</div>
+          {record.requiresAppointment !== false && (
+            <>
+              <div><strong>Date Label:</strong> {record.appointmentDateLabel || "Appointment Date"}</div>
+              <div><strong>Time Label:</strong> {record.appointmentTimeLabel || "Appointment Time"}</div>
+            </>
+          )}
+        </div>
+      ),
     },
     {
       title: "Actions",
@@ -304,6 +370,7 @@ export default function CategoryManagement() {
         open={categoryModalVisible}
         onCancel={() => setCategoryModalVisible(false)}
         footer={null}
+        width={600}
       >
         <Form
           form={categoryForm}
@@ -317,9 +384,70 @@ export default function CategoryManagement() {
           >
             <Input placeholder="Enter category name" />
           </Form.Item>
+          
           <Form.Item name="hasSubType" label="Has Subtypes" valuePropName="checked">
             <Switch />
           </Form.Item>
+
+          <Form.Item name="requiresAppointment" label="Requires Appointment" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+
+          <Form.Item
+            name="appointmentDateLabel"
+            label="Appointment Date Label"
+            rules={[{ required: true, message: "Please enter appointment date label" }]}
+          >
+            <Input placeholder="e.g., Appointment Date, Booking Date" />
+          </Form.Item>
+
+          <Form.Item
+            name="appointmentTimeLabel"
+            label="Appointment Time Label"
+            rules={[{ required: true, message: "Please enter appointment time label" }]}
+          >
+            <Input placeholder="e.g., Appointment Time, Booking Time" />
+          </Form.Item>
+
+          <Form.Item
+            name="appointmentDescription"
+            label="Appointment Description"
+            rules={[{ required: true, message: "Please enter appointment description" }]}
+          >
+            <Input.TextArea 
+              placeholder="e.g., Select your preferred appointment date and time"
+              rows={3}
+            />
+          </Form.Item>
+
+          <Form.Item name="icon" label="Icon">
+            <Select placeholder="Select an icon" showSearch>
+              <Select.Option value="home">🏠 Home</Select.Option>
+              <Select.Option value="car">🚗 Car</Select.Option>
+              <Select.Option value="airplane">✈️ Airplane</Select.Option>
+              <Select.Option value="bed">🛏️ Bed</Select.Option>
+              <Select.Option value="restaurant">🍽️ Restaurant</Select.Option>
+              <Select.Option value="medical">🏥 Medical</Select.Option>
+              <Select.Option value="school">🎓 School</Select.Option>
+              <Select.Option value="business">💼 Business</Select.Option>
+              <Select.Option value="construct">🔧 Construct</Select.Option>
+              <Select.Option value="fitness">💪 Fitness</Select.Option>
+              <Select.Option value="gift">🎁 Gift</Select.Option>
+              <Select.Option value="heart">❤️ Heart</Select.Option>
+              <Select.Option value="star">⭐ Star</Select.Option>
+              <Select.Option value="bookmark">🔖 Bookmark</Select.Option>
+              <Select.Option value="calendar">📅 Calendar</Select.Option>
+              <Select.Option value="time">⏰ Time</Select.Option>
+              <Select.Option value="location">📍 Location</Select.Option>
+              <Select.Option value="person">👤 Person</Select.Option>
+              <Select.Option value="people">👥 People</Select.Option>
+              <Select.Option value="settings">⚙️ Settings</Select.Option>
+              <Select.Option value="notifications">🔔 Notifications</Select.Option>
+              <Select.Option value="search">🔍 Search</Select.Option>
+              <Select.Option value="menu">📋 Menu</Select.Option>
+            </Select>
+          </Form.Item>
+
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit" icon={<SaveOutlined />}>

@@ -1,43 +1,41 @@
 "use client"
 
-import type React from "react"
+import React, { useState, useEffect } from "react";
+import {
+  Modal,
+  Form,
+  Input,
+  Button,
+  Select,
+  Upload,
+  Space,
+  message,
+  InputNumber,
+  Divider,
+  Typography,
+} from "antd";
+import { PlusOutlined, DeleteOutlined, UploadOutlined } from "@ant-design/icons";
+import { useCreateItem, useUpdateItem } from "@/services/apis/items";
+import backendAPI from "@/services/apis/api";
+import type { UploadFile } from "antd/es/upload/interface";
+import { Item, CreateItemData } from "@/types/item.types";
+import { Category as CategoryType } from "@/types/category.types";
+import { UploadChangeParam } from "@/types/api.types";
+import { PricingManager } from "./PricingManager";
 
-import { Modal, Form, Input, Button, InputNumber, Select, Space, Upload, message, Divider } from "antd"
-import { useCreateItem, useUpdateItem } from "@/services/apis/items"
-import { useEffect, useState } from "react"
-import backendAPI from "@/services/apis/api"
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons"
-import type { UploadFile } from "antd/es/upload/interface"
-
-interface ItemData {
-  _id?: string
-  title: string
-  subtitle?: string
-  about?: string
-  type?: string
-  subType?: string
-  location?: string
-  imgs?: string[]
-  price: PriceItem[]
-  keyvalue?: { key: string; value?: string; type: string }[]
-}
-
-interface PriceItem {
-  cost: number
-  type: string
-}
+const { TextArea } = Input;
+const { Option } = Select;
+const { Title } = Typography;
 
 interface CreateItemModalProps {
   visible: boolean
   onClose: () => void
   onItemSaved?: () => void
   onItemCreated?: () => void
-  initialData?: ItemData | null
+  initialData?: Item | null
   mode?: "create" | "edit"
   setIsModalVisible: (visible: boolean) => void
 }
-
-const { Option } = Select
 
 const CreateItemModal: React.FC<CreateItemModalProps> = ({
   visible,
@@ -48,13 +46,13 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
   mode = "create",
   setIsModalVisible,
 }) => {
-  const [form] = Form.useForm()
+  const [form] = Form.useForm<CreateItemData>()
   const [loading, setLoading] = useState(false)
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const createItemMutation = useCreateItem()
   const updateItemMutation = useUpdateItem()
 
-  const [categories, setCategories] = useState<any[]>([])
+  const [categories, setCategories] = useState<CategoryType[]>([])
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [subcategories, setSubcategories] = useState<string[]>([])
@@ -178,7 +176,7 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
         const files = initialData.imgs.map((url, index) => ({
           uid: `-${index}`,
           name: `image-${index}.jpg`,
-          status: "done",
+          status: "done" as const,
           url,
         }))
         setFileList(files)
@@ -199,7 +197,7 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
         setCategories(data || [])
       } catch (error) {
         console.error("Error fetching categories:", error)
-        setCategories([])
+        message.error("Failed to fetch categories")
       }
     }
 
@@ -211,281 +209,293 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
   const handleSubmit = async () => {
     try {
       setLoading(true)
-      
-      // Validate form fields
       const values = await form.validateFields()
-      
-      // Initialize price array if it doesn't exist
-      if (!values.price) {
-        values.price = []
-      }
-      
-      // Ensure each price item has the correct structure
-      const formattedPrices = values.price.map(item => ({
-        cost: Number(item.cost || 0),
-        type: item.type || "Standard"
-      }))
 
-      // Ensure required fields exist before sending
-      const formattedValues = {
-        title: values.title,
-        subtitle: values.subtitle || "",
-        about: values.about || "",
-        type: values.type,
-        subType: values.subType || "",
-        location: values.location || "",
-        price: formattedPrices,
-        imgs: [] // Will be populated below
+      // Handle file uploads if any
+      const uploadedUrls: string[] = []
+      for (const file of fileList) {
+        if (file.originFileObj) {
+          const formData = new FormData()
+          formData.append("file", file.originFileObj)
+          const uploadResponse = await backendAPI.post("/utils/image", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })
+          uploadedUrls.push(uploadResponse.data.secure_url)
+        } else if (file.url) {
+          uploadedUrls.push(file.url)
+        }
       }
 
-      // Handle file uploads if there are new files
-      const newFiles = fileList.filter((file) => file.originFileObj)
-      let uploadedImageUrls: string[] = []
-
-      if (newFiles?.length > 0) {
-        uploadedImageUrls = await Promise.all(
-          newFiles.map(async (file) => {
-            if (!file.originFileObj) return ""
-
-            const formData = new FormData()
-            formData.append("file", file.originFileObj)
-
-            try {
-              const response = await backendAPI.post("/utils/image", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-              })
-              return response.data?.secure_url || ""
-            } catch (error) {
-              console.error("Image upload failed:", error)
-              return ""
-            }
-          }),
-        )
+      const itemData: CreateItemData = {
+        ...values,
+        imgs: uploadedUrls,
       }
-
-      // Get existing image URLs that weren't removed
-      const existingImageUrls = fileList.filter((file) => file.url && !file.originFileObj).map((file) => file.url || "")
-
-      // Combine existing and new image URLs
-      const allImageUrls = [...existingImageUrls, ...uploadedImageUrls.filter((url) => url)]
-
-      // Add images to the formatted values
-      formattedValues.imgs = allImageUrls
-
-      console.log("Submitting item with values:", formattedValues)
 
       if (mode === "create") {
-        await createItemMutation.mutateAsync(formattedValues)
+        await createItemMutation.mutateAsync(itemData)
         message.success("Item created successfully!")
-        if (onItemCreated) onItemCreated()
-      } else if (mode === "edit" && initialData?._id) {
-        await updateItemMutation.mutateAsync({ id: initialData._id, data: formattedValues })
+        onItemCreated?.()
+      } else if (initialData?._id) {
+        await updateItemMutation.mutateAsync({
+          id: initialData._id,
+          data: itemData,
+        })
         message.success("Item updated successfully!")
-        if (onItemSaved) onItemSaved()
+        onItemSaved?.()
       }
 
-      onClose()
+      setIsModalVisible(false)
       form.resetFields()
       setFileList([])
+      setSelectedCategory(null)
     } catch (error) {
-      console.error("Form validation or API call failed:", error)
-      
-      // Show more specific error messages
-      if (error.errorFields) {
-        const fieldErrors = error.errorFields.map(field => `${field.name.join('.')}: ${field.errors.join(', ')}`);
-        message.error(`Please fix the following errors: ${fieldErrors.join('; ')}`);
-      } else if (error.response?.data?.message) {
-        message.error(`API Error: ${error.response.data.message}`);
-      } else {
-        message.error("Failed to save item. Please check your form inputs.")
-      }
+      console.error("Error saving item:", error)
+      message.error("Failed to save item")
     } finally {
       setLoading(false)
     }
   }
 
-  const uploadProps = {
-    listType: "picture-card",
-    fileList: fileList,
-    onChange: ({ fileList: newFileList }) => {
-      setFileList(newFileList)
-    },
-    onPreview: async (file: UploadFile) => {
-      let src = file.url as string
+  const handleUploadChange = (info: any) => {
+    setFileList(info.fileList)
+  }
 
-      if (!src) {
-        src = await new Promise((resolve) => {
-          const reader = new FileReader()
-          reader.readAsDataURL(file.originFileObj as File)
-
-          reader.onload = () => resolve(reader.result as string)
-        })
-      }
-
-      const image = new Image()
-      image.src = src
-      const imgWindow = window.open(src)
-
-      if (imgWindow) {
-        imgWindow.document.write(image.outerHTML)
-      }
-    },
-    beforeUpload: () => false,
+  const handleRemoveFile = (file: UploadFile) => {
+    const newFileList = fileList.filter((f) => f.uid !== file.uid)
+    setFileList(newFileList)
   }
 
   return (
     <Modal
-      open={visible} // Changed from 'visible' to 'open' for newer Ant Design versions
-      title={mode === "create" ? "Create Item" : "Edit Item"}
-      onCancel={onClose}
-      footer={[
-        <Button key="cancel" onClick={onClose}>
-          Cancel
-        </Button>,
-        <Button key="submit" type="primary" loading={loading} onClick={handleSubmit}>
-          {mode === "create" ? "Create" : "Save"}
-        </Button>,
-      ]}
+      title={mode === "create" ? "Create New Item" : "Edit Item"}
+      open={visible}
+      onCancel={() => {
+        setIsModalVisible(false)
+        setSelectedCategory(null)
+      }}
+      footer={null}
+      width={800}
+      destroyOnClose
     >
-      <Form form={form} layout="vertical">
-        <Form.Item name="title" label="Title" rules={[{ required: true, message: "Title is required" }]}>
-          <Input />
-        </Form.Item>
-        <Form.Item name="subtitle" label="Subtitle">
-          <Input />
-        </Form.Item>
-        <Form.Item name="about" label="About" rules={[{ required: true, message: "About is required" }]}>
-          <Input.TextArea rows={4} />
-        </Form.Item>
-
-        <Form.Item name="type" label="Category" rules={[{ required: true, message: "Category is required" }]}>
-          <Select
-            disabled={categories?.length === 0}
-            onChange={handleCategoryChange}
-            dropdownRender={(menu) => (
-              <>
-                {menu}
-                <Divider style={{ margin: "8px 0" }} />
-                {showNewCategoryInput ? (
-                  <Space style={{ padding: "0 8px 4px" }}>
-                    <Input
-                      placeholder="New category name"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      onPressEnter={handleCreateCategory}
-                    />
-                    <Button type="text" icon={<PlusOutlined />} onClick={handleCreateCategory}>
-                      Add
-                    </Button>
-                  </Space>
-                ) : (
-                  <Button
-                    type="text"
-                    icon={<PlusOutlined />}
-                    onClick={() => setShowNewCategoryInput(true)}
-                    style={{ padding: "0 8px 4px" }}
-                  >
-                    Add Category
-                  </Button>
-                )}
-              </>
-            )}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        initialValues={{
+          price: [{ cost: 0, type: "" }],
+          keyvalue: [{ key: "", value: "", type: "" }],
+        }}
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <Form.Item
+            name="title"
+            label="Title"
+            rules={[{ required: true, message: "Please enter title" }]}
           >
-            {categories?.length === 0 && <Option value="">None</Option>}
-            {categories.map((category) => (
-              <Option key={category._id} value={category._id}>
-                {category.name}
-              </Option>
-            ))}
-          </Select>
+            <Input placeholder="Enter item title" />
+          </Form.Item>
+
+          <Form.Item name="subtitle" label="Subtitle">
+            <Input placeholder="Enter subtitle" />
+          </Form.Item>
+        </div>
+
+        <Form.Item name="about" label="Description">
+          <Input.TextArea rows={3} placeholder="Enter description" />
         </Form.Item>
 
-        {selectedCategory && (
-          <Form.Item name="subType" label="Subcategory">
+        <div className="grid grid-cols-2 gap-4">
+          <Form.Item name="type" label="Category">
             <Select
-              allowClear
-              placeholder="Select subcategory (optional)"
-              disabled={subcategories?.length === 0 && !selectedCategory}
+              placeholder="Select category"
+              onChange={handleCategoryChange}
               dropdownRender={(menu) => (
-                <>
+                <div>
                   {menu}
                   <Divider style={{ margin: "8px 0" }} />
-                  {showNewSubcategoryInput ? (
-                    <Space style={{ padding: "0 8px 4px" }}>
-                      <Input
-                        placeholder="New subcategory name"
-                        value={newSubcategoryName}
-                        onChange={(e) => setNewSubcategoryName(e.target.value)}
-                        onPressEnter={handleCreateSubcategory}
-                      />
-                      <Button type="text" icon={<PlusOutlined />} onClick={handleCreateSubcategory}>
-                        Add
+                  <div style={{ padding: "0 8px 4px" }}>
+                    {showNewCategoryInput ? (
+                      <Space>
+                        <Input
+                          placeholder="Category name"
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                        />
+                        <Button
+                          type="text"
+                          size="small"
+                          onClick={handleCreateCategory}
+                        >
+                          Add
+                        </Button>
+                        <Button
+                          type="text"
+                          size="small"
+                          onClick={() => setShowNewCategoryInput(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </Space>
+                    ) : (
+                      <Button
+                        type="text"
+                        icon={<PlusOutlined />}
+                        onClick={() => setShowNewCategoryInput(true)}
+                      >
+                        Add Category
                       </Button>
-                    </Space>
-                  ) : (
-                    <Button
-                      type="text"
-                      icon={<PlusOutlined />}
-                      onClick={() => setShowNewSubcategoryInput(true)}
-                      style={{ padding: "0 8px 4px" }}
-                      disabled={!selectedCategory}
-                    >
-                      Add Subcategory
-                    </Button>
-                  )}
-                </>
+                    )}
+                  </div>
+                </div>
               )}
             >
-              {subcategories.map((subName) => (
-                <Option key={subName} value={subName}>
-                  {subName}
+              {categories.map((category) => (
+                <Option key={category._id} value={category._id}>
+                  {category.name}
                 </Option>
               ))}
             </Select>
           </Form.Item>
-        )}
 
-        <Form.Item name="location" label="Location" rules={[{ required: true, message: "Location is required" }]}>
-          <Select>
-            <Option value="mirpur">Mirpur</Option>
-            <Option value="islamabad">Islamabad</Option>
-          </Select>
+          <Form.Item name="subType" label="Subcategory">
+            <Select
+              placeholder="Select subcategory"
+              disabled={!selectedCategory}
+              dropdownRender={(menu) => (
+                <div>
+                  {menu}
+                  {selectedCategory && (
+                    <>
+                      <Divider style={{ margin: "8px 0" }} />
+                      <div style={{ padding: "0 8px 4px" }}>
+                        {showNewSubcategoryInput ? (
+                          <Space>
+                            <Input
+                              placeholder="Subcategory name"
+                              value={newSubcategoryName}
+                              onChange={(e) => setNewSubcategoryName(e.target.value)}
+                            />
+                            <Button
+                              type="text"
+                              size="small"
+                              onClick={handleCreateSubcategory}
+                            >
+                              Add
+                            </Button>
+                            <Button
+                              type="text"
+                              size="small"
+                              onClick={() => setShowNewSubcategoryInput(false)}
+                            >
+                              Cancel
+                            </Button>
+                          </Space>
+                        ) : (
+                          <Button
+                            type="text"
+                            icon={<PlusOutlined />}
+                            onClick={() => setShowNewSubcategoryInput(true)}
+                          >
+                            Add Subcategory
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            >
+              {subcategories.map((sub) => (
+                <Option key={sub} value={sub}>
+                  {sub}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+        </div>
+
+        <Form.Item name="location" label="Location">
+          <Input placeholder="Enter location" />
         </Form.Item>
 
-        <Form.List name="price">
+        <Form.Item name="price" label="Pricing">
+          <PricingManager />
+        </Form.Item>
+
+        <Form.List name="keyvalue">
           {(fields, { add, remove }) => (
-            <>
-              {fields.map((field) => (
-                <Space key={field.key} align="baseline">
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-sm font-medium">Additional Details</label>
+                <Button
+                  type="dashed"
+                  onClick={() => add()}
+                  icon={<PlusOutlined />}
+                  size="small"
+                >
+                  Add Detail
+                </Button>
+              </div>
+              {fields.map(({ key, name, ...restField }) => (
+                <Space key={key} style={{ display: "flex", marginBottom: 8 }}>
                   <Form.Item
-                    {...field}
-                    name={[field.name, "cost"]}
-                    label="Cost"
-                    rules={[{ required: true, message: "Missing cost" }]}
+                    {...restField}
+                    name={[name, "key"]}
+                    rules={[{ required: true, message: "Missing key" }]}
                   >
-                    <InputNumber min={0} />
+                    <Input placeholder="Key" />
                   </Form.Item>
                   <Form.Item
-                    {...field}
-                    name={[field.name, "type"]}
-                    label="Type"
+                    {...restField}
+                    name={[name, "value"]}
+                  >
+                    <Input placeholder="Value" />
+                  </Form.Item>
+                  <Form.Item
+                    {...restField}
+                    name={[name, "type"]}
                     rules={[{ required: true, message: "Missing type" }]}
                   >
-                    <Input placeholder="e.g., Hourly, Daily, Fixed" />
+                    <Input placeholder="Type" />
                   </Form.Item>
-                  <DeleteOutlined onClick={() => remove(field.name)} />
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => remove(name)}
+                  />
                 </Space>
               ))}
-              <Form.Item>
-                <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                  Add Price
-                </Button>
-              </Form.Item>
-            </>
+            </div>
           )}
         </Form.List>
 
-       
+        <Form.Item label="Images">
+          <Upload
+            listType="picture-card"
+            fileList={fileList}
+            onChange={handleUploadChange}
+            onRemove={handleRemoveFile}
+            beforeUpload={() => false}
+            multiple
+          >
+            {fileList.length >= 8 ? null : (
+              <div>
+                <PlusOutlined />
+                <div style={{ marginTop: 8 }}>Upload</div>
+              </div>
+            )}
+          </Upload>
+        </Form.Item>
+
+        <Form.Item>
+          <Space>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              {mode === "create" ? "Create" : "Update"}
+            </Button>
+            <Button onClick={() => setIsModalVisible(false)}>Cancel</Button>
+          </Space>
+        </Form.Item>
       </Form>
     </Modal>
   )

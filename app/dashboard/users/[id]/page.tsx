@@ -1,79 +1,85 @@
 "use client";
 
-import { useUser, useUpdateUser, useDeleteUser } from "@/services/apis/user";
-import { useParams,useRouter } from "next/navigation";
-import { Card, Avatar, Descriptions, Spin, Alert, Space, Button, Input, Upload, message, Modal, DatePicker, Select } from "antd";
-import '@ant-design/v5-patch-for-react-19';
-import { useEffect, useState } from "react";
-import { UploadOutlined, EditOutlined, DeleteOutlined, SaveOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
-import api from "@/services/apis/api";
-
+import { useState, useEffect } from "react"
+import { Card, Descriptions, Button, Space, Avatar, Upload, Spin, Alert, Select, DatePicker, Input } from "antd"
+import { UploadOutlined, EditOutlined, SaveOutlined, DeleteOutlined, UserOutlined } from "@ant-design/icons"
+import { useUser, useUpdateUser, useDeleteUser } from "@/services/apis/user"
+import { useParams, useRouter } from "next/navigation"
+import { message } from "antd"
+import api from "@/services/apis/api"
+import dayjs from "dayjs"
+import { User, UserFormData } from "@/types/user.types"
+import { UploadChangeParam } from "@/types/api.types"
 
 export default function UserPage() {
-    const params = useParams();
-    const id = params?.id?.toString(); // Convert to string safely
-    const { data: user, isError, isPending, refetch } = useUser(id as string);
-    const updateUserMutation = useUpdateUser();
-    const deleteUserMutation = useDeleteUser();
-    const router = useRouter(); 
+    const params = useParams()
+    const router = useRouter()
+    const id = params.id as string
+    const [isEditing, setIsEditing] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState(user || {});
+    const [formData, setFormData] = useState<UserFormData>({
+        name: "",
+        email: "",
+        phone: "",
+        role: "user",
+        gender: "male",
+        dateOfBirth: "",
+        address: "",
+        image: "",
+    })
+
+    const { data: user, isPending, isError } = useUser(id)
+    const updateUserMutation = useUpdateUser()
+    const deleteUserMutation = useDeleteUser()
 
     useEffect(() => {
-        if (id) refetch(); // Refetch data when user ID changes
-    }, [id, refetch]);
-
-    useEffect(() => {
-        if (user) setFormData(user);
-    }, [user]);
+        if (user) {
+            setFormData({
+                name: user.name || "",
+                email: user.email || "",
+                phone: user.phone || "",
+                role: user.role || "user",
+                gender: user.gender || "male",
+                dateOfBirth: user.dateOfBirth || "",
+                address: user.address || "",
+                image: user.image || "",
+            })
+        }
+    }, [user])
 
     const handleEdit = () => setIsEditing(true);
 
     const handleSave = async () => {
-        updateUserMutation.mutate(
-            { id, data: formData },
-            {
-                onSuccess: () => {
-                    message.success("User details updated successfully!");
-                    setIsEditing(false);
-                    refetch();
-                },
-                onError: () => {
-                    message.error("Failed to update user details");
-                },
-            }
-        );
+        try {
+            setLoading(true)
+            await updateUserMutation.mutateAsync({ id, data: formData })
+            message.success("User updated successfully!")
+            setIsEditing(false)
+        } catch (error) {
+            console.error("Error updating user:", error)
+            message.error("Failed to update user")
+        } finally {
+            setLoading(false)
+        }
     };
 
     const handleDelete = () => {
-        Modal.confirm({
-            title: "Are you sure you want to delete this user?",
-            content: "This action cannot be undone!",
-            okText: "Delete",
-            okType: "danger",
-            cancelText: "Cancel",
-            onOk: () => {
-                deleteUserMutation.mutate(id, {
-                    onSuccess: () => {
-                        message.success("User deleted successfully");
-                        // Redirect or handle UI after deletion
-                        router.push("/dashboard/users"); // Redirect after success
-                    },
-                    onError: () => {
-                        message.error("Failed to delete user");
-                    },
-                });
-            },
-        });
+        if (confirm("Are you sure you want to delete this user?")) {
+            deleteUserMutation.mutateAsync(id).then(() => {
+                message.success("User deleted successfully!")
+                router.push("/dashboard/users")
+            }).catch((error) => {
+                console.error("Error deleting user:", error)
+                message.error("Failed to delete user")
+            })
+        }
     };
 
-    const handleInputChange = (key: string, value: string) => {
-        setFormData((prev: any) => ({ ...prev, [key]: value }));
+    const handleInputChange = (key: keyof UserFormData, value: string) => {
+        setFormData((prev: UserFormData) => ({ ...prev, [key]: value }));
     };
 
-    const handleImageUpload = async (file: File, setFormData: Function) => {
+    const handleImageUpload = async (file: File, setFormData: (updater: (prev: UserFormData) => UserFormData) => void) => {
         try {
             setLoading(true)
             const formData = new FormData();
@@ -90,7 +96,7 @@ export default function UserPage() {
                 message.success("Image uploaded successfully");
 
                 // Update the formData state with the new image URL
-                setFormData((prev: any) => ({ ...prev, image: response.data.secure_url }));
+                setFormData((prev: UserFormData) => ({ ...prev, image: response.data.secure_url }));
             } else {
                 message.error("Failed to upload image");
             }
@@ -107,9 +113,10 @@ export default function UserPage() {
             handleImageUpload(file, setFormData);
         }
     };
+    
     if (!id) return <Alert message="User ID not provided in URL" type="warning" showIcon />;
 
-    if (isPending )
+    if (isPending)
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <Spin size="large" />
@@ -145,19 +152,6 @@ export default function UserPage() {
 
                     {/* User Details */}
                     <Descriptions title="User Details" bordered column={1} size="middle">
-                        {/* {["name", "email", "phone", "role", "gender", "dateOfBirth", "address"].map((field) => (
-                            <Descriptions.Item label={field.charAt(0).toUpperCase() + field.slice(1)} key={field}>
-                                {isEditing ? (
-                                    <Input
-                                        value={formData[field] || ""}
-                                        onChange={(e) => handleInputChange(field, e.target.value)}
-                                    />
-                                ) : (
-                                    formData[field] || "N/A"
-                                )}
-                            </Descriptions.Item>
-                        ))} */}
-
                         <Descriptions.Item label="Name">
                             {isEditing ? (
                                 <Input
@@ -228,7 +222,7 @@ export default function UserPage() {
                             {isEditing ? (
                                 <DatePicker
                                     value={formData.dateOfBirth ? dayjs(formData.dateOfBirth) : null}
-                                    onChange={(date) => handleInputChange("dateOfBirth", date?.toISOString() || null)}
+                                    onChange={(date) => handleInputChange("dateOfBirth", date?.toISOString() || "")}
                                     format="YYYY-MM-DD"
                                     style={{ width: "100%" }}
                                 />
@@ -249,15 +243,15 @@ export default function UserPage() {
                         </Descriptions.Item>
 
                         <Descriptions.Item label="OTP Verified">
-                            {formData?.otp?.verified ? "✅ Yes" : "❌ No"}
+                            {user?.otp?.verified ? "✅ Yes" : "❌ No"}
                         </Descriptions.Item>
 
                         <Descriptions.Item label="Created At">
-                            {new Date(formData?.createdAt).toLocaleString()}
+                            {new Date(user?.createdAt || "").toLocaleString()}
                         </Descriptions.Item>
 
                         <Descriptions.Item label="Updated At">
-                            {formData?.updatedAt ? new Date(formData.updatedAt).toLocaleString() : "N/A"}
+                            {user?.updatedAt ? new Date(user.updatedAt).toLocaleString() : "N/A"}
                         </Descriptions.Item>
                     </Descriptions>
 
@@ -269,15 +263,21 @@ export default function UserPage() {
                                     type="primary"
                                     icon={<SaveOutlined />}
                                     onClick={handleSave}
-                                    loading={updateUserMutation.isPending || loading}
+                                    loading={loading}
                                 >
                                     Save
                                 </Button>
-                                <Button onClick={() => setIsEditing(false)}>Cancel</Button>
+                                <Button onClick={() => setIsEditing(false)}>
+                                    Cancel
+                                </Button>
                             </>
                         ) : (
                             <>
-                                <Button icon={<EditOutlined />} onClick={handleEdit}>
+                                <Button
+                                    type="primary"
+                                    icon={<EditOutlined />}
+                                    onClick={handleEdit}
+                                >
                                     Edit
                                 </Button>
                                 <Button
@@ -294,5 +294,5 @@ export default function UserPage() {
                 </Space>
             </Card>
         </div>
-    );
+    )
 }
