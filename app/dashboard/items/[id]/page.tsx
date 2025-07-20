@@ -42,12 +42,11 @@ interface Category {
 interface PriceItem {
   cost: number
   type: string
-}
-
-interface KeyValuePair {
-  key: string
-  value?: string
-  type: string
+  isActive?: boolean
+  minQuantity?: number
+  maxQuantity?: number
+  description?: string
+  currency?: string
 }
 
 interface Review {
@@ -66,7 +65,6 @@ interface Item {
   about?: string
   imgs: string[]
   price: PriceItem[]
-  keyvalue?: KeyValuePair[]
   reviews?: Review[]
 }
 
@@ -88,7 +86,7 @@ export default function EditableItemPage() {
       try {
         const { data } = await axios.get<Category[]>("/category")
         setCategories(data)
-      } catch (error) {
+      } catch (error: any) {
         console.log(`Error Fetching Categories: ${error.message}`)
       }
     }
@@ -100,7 +98,7 @@ export default function EditableItemPage() {
       const response = await axios.get<Item>(`/items/${id}`)
       setItem(response.data)
       setOriginalItem(response.data)
-    } catch (err) {
+    } catch (err: any) {
       setError("Failed to load item")
     } finally {
       setLoading(false)
@@ -143,25 +141,23 @@ export default function EditableItemPage() {
   const handlePriceChange = (index: number, key: keyof PriceItem, value: any) => {
     if (!item) return
     const updatedPrices = [...item.price]
-    updatedPrices[index][key] = value
+    ;(updatedPrices[index] as any)[key] = value
     setItem((prev) => (prev ? { ...prev, price: updatedPrices } : null))
   }
 
   // Add new price
   const addPrice = () => {
     if (!item) return
-    setItem((prev) => (prev ? { ...prev, price: [...prev.price, { cost: 0, type: "" }] } : null))
-  }
-
-  // Handle key-value pair changes
-  const handleKeyValueChange = (index: number, key: keyof KeyValuePair, value: any) => {
-    if (!item) return
-    setItem((prev) => {
-      if (!prev) return null
-      const updatedPairs = [...(prev.keyvalue || [])]
-      updatedPairs[index][key] = value
-      return { ...prev, keyvalue: updatedPairs }
-    })
+    setItem((prev) => (prev ? { 
+      ...prev, 
+      price: [...prev.price, { 
+        cost: 0, 
+        type: "", 
+        isActive: true, 
+        minQuantity: 1, 
+        currency: "PKR" 
+      }] 
+    } : null))
   }
 
   // Remove price
@@ -172,30 +168,6 @@ export default function EditableItemPage() {
     setItem((prev) => (prev ? { ...prev, price: updatedPrices } : null))
   }
 
-  // Add key-value pair
-  const addKeyValuePair = () => {
-    if (!item) return
-    setItem((prev) => {
-      if (!prev) return null
-      return {
-        ...prev,
-        keyvalue: [...(prev.keyvalue || []), { key: "", value: "", type: "text" }],
-      }
-    })
-  }
-
-  // Remove key-value pair
-  const removeKeyValuePair = (index: number) => {
-    if (!item) return
-    setItem((prev) => {
-      if (!prev) return null
-      return {
-        ...prev,
-        keyvalue: prev.keyvalue?.filter((_, i) => i !== index) || [],
-      }
-    })
-  }
-
   // Save changes
   const handleSave = async () => {
     if (!item || !originalItem) return
@@ -204,22 +176,56 @@ export default function EditableItemPage() {
     try {
       // Upload all images and get URLs
       const imgs = await Promise.all(
-        fileList.map(async (file) => {
-          const formData = new FormData()
-          formData.append("file", file)
-          const response = await axios.post("/utils/image", formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          })
-          return response.data?.secure_url
+        fileList.map(async (file, index) => {
+          try {
+            const formData = new FormData()
+            formData.append("file", file)
+            
+            message.loading({ content: `Uploading ${file.name}...`, key: `upload-${index}` })
+            
+            const response = await axios.post("/utils/image", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+              timeout: 30000, // 30 second timeout
+            })
+            
+            if (response.data?.secure_url) {
+              message.success({ content: `${file.name} uploaded successfully`, key: `upload-${index}` })
+              return response.data.secure_url
+            } else {
+              throw new Error('Upload response missing secure_url')
+            }
+          } catch (error) {
+            console.error(`Error uploading ${file.name}:`, error)
+            message.error({ content: `Failed to upload ${file.name}`, key: `upload-${index}` })
+            throw new Error(`Failed to upload ${file.name}`)
+          }
         }),
       )
 
-      // Update item with new data including images
-      const response = await axios.patch(`/items/${id}`, {
+      // Extract type value properly - ensure it's a string (category ID)
+      const typeValue = typeof item.type === 'object' && item.type 
+        ? item.type._id 
+        : item.type;
+
+      // Process the data to match backend expectations
+      const updateData = {
         ...item,
-        imgs: [...originalItem.imgs, ...imgs],
-        type : item.type
-      })
+        type: typeValue, // Ensure type is a string
+        imgs: [...item.imgs, ...imgs], // Use current item.imgs state instead of originalItem.imgs
+        // Ensure price has proper structure
+        price: item.price.map(price => ({
+          cost: price.cost || 0,
+          type: price.type || "",
+          isActive: price.isActive !== undefined ? price.isActive : true,
+          minQuantity: price.minQuantity || 1,
+          maxQuantity: price.maxQuantity,
+          description: price.description,
+          currency: price.currency || "PKR"
+        }))
+      }
+
+      // Update item with new data including images
+      const response = await axios.patch(`/items/${id}`, updateData)
 
       message.success("Item updated successfully!")
       setOriginalItem(response.data)
@@ -228,7 +234,7 @@ export default function EditableItemPage() {
       setIsEditing(false)
     } catch (err) {
       console.error(err)
-      message.error("Failed to update item.")
+      message.error("Failed to update item. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -264,8 +270,19 @@ export default function EditableItemPage() {
   // Remove image
   const handleRemoveImage = (index: number) => {
     if (!item) return
-    const updatedImgs = item.imgs.filter((_, i) => i !== index)
-    setItem((prev) => (prev ? { ...prev, imgs: updatedImgs } : null))
+    
+    Modal.confirm({
+      title: 'Remove Image',
+      content: 'Are you sure you want to remove this image? This action cannot be undone.',
+      okText: 'Remove',
+      cancelText: 'Cancel',
+      okType: 'danger',
+      onOk: () => {
+        const updatedImgs = item.imgs.filter((_, i) => i !== index);
+        setItem((prev) => (prev ? { ...prev, imgs: updatedImgs } : null));
+        message.success('Image removed successfully');
+      }
+    });
   }
 
   // Remove review
@@ -423,6 +440,11 @@ export default function EditableItemPage() {
       {/* Images section */}
       <Title level={4}>Images</Title>
       <Card style={{ background: "#ffffff", padding: "15px", borderRadius: "10px", border: "1px solid #ddd" }}>
+        <div style={{ marginBottom: 12 }}>
+          <Text type="secondary">
+            {item.imgs.length} image(s) uploaded. {isEditing && "Click the X button to remove images."}
+          </Text>
+        </div>
         <div style={{ maxHeight: "300px", overflowY: "auto", paddingRight: "10px" }}>
           <Row gutter={[16, 16]} justify="start">
             {item.imgs.length > 0 ? (
@@ -438,6 +460,11 @@ export default function EditableItemPage() {
                         objectFit: "cover",
                         borderRadius: "8px",
                         border: "1px solid #ddd",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => {
+                        // Open image in new tab for preview
+                        window.open(img, '_blank');
                       }}
                     />
                     {isEditing && (
@@ -445,8 +472,16 @@ export default function EditableItemPage() {
                         type="default"
                         icon={<DeleteOutlined />}
                         size="small"
-                        style={{ position: "absolute", top: 5, right: 5, background: "white" }}
+                        style={{ 
+                          position: "absolute", 
+                          top: 5, 
+                          right: 5, 
+                          background: "white",
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                          border: "1px solid #d9d9d9"
+                        }}
                         onClick={() => handleRemoveImage(index)}
+                        title="Remove image"
                       />
                     )}
                   </div>
@@ -463,31 +498,62 @@ export default function EditableItemPage() {
 
       {/* Image upload */}
       {isEditing && (
-        <Upload
-          listType="picture"
-          fileList={fileList.map((file, index) => ({
-            uid: `-${index}`,
-            name: file.name,
-            status: "done",
-            url: URL.createObjectURL(file),
-          }))}
-          onRemove={(file) => {
-            const index = fileList.findIndex((f) => f.uid === file.uid)
-            if (index !== -1) {
-              const newFileList = [...fileList]
-              newFileList.splice(index, 1)
-              setFileList(newFileList)
-            }
-          }}
-          beforeUpload={(file) => {
-            setFileList((prev) => [...prev, file])
-            return false
-          }}
-        >
-          <Button icon={<UploadOutlined />} style={{ marginTop: "12px" }}>
-            Upload Image
-          </Button>
-        </Upload>
+        <div style={{ marginTop: 16 }}>
+          <div style={{ marginBottom: 8 }}>
+            <Text type="secondary">
+              Upload new images. Supported formats: JPG, PNG, GIF, WebP. Max size: 5MB per image.
+            </Text>
+          </div>
+          <Upload
+            listType="picture"
+            fileList={fileList.map((file, index) => ({
+              uid: `-${index}`,
+              name: file.name,
+              status: "done",
+              url: URL.createObjectURL(file),
+            }))}
+            onRemove={(file) => {
+              const index = fileList.findIndex((f) => f.uid === file.uid)
+              if (index !== -1) {
+                const newFileList = [...fileList]
+                newFileList.splice(index, 1)
+                setFileList(newFileList)
+                message.success('Image removed from upload queue');
+              }
+            }}
+            beforeUpload={(file) => {
+              const isImage = file.type?.startsWith('image/') || file.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+              const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
+              
+              if (!isImage) {
+                message.error('You can only upload image files!');
+                return false;
+              }
+              
+              if (!isValidSize) {
+                message.error('Image must be smaller than 5MB!');
+                return false;
+              }
+              
+              setFileList((prev) => [...prev, file])
+              message.success(`${file.name} added to upload queue`);
+              return false;
+            }}
+            accept="image/*"
+            multiple
+          >
+            <Button icon={<UploadOutlined />} style={{ marginTop: "12px" }}>
+              Upload Image
+            </Button>
+          </Upload>
+          {fileList.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary">
+                {fileList.length} new image(s) ready to upload
+              </Text>
+            </div>
+          )}
+        </div>
       )}
 
       <Divider />
@@ -520,79 +586,34 @@ export default function EditableItemPage() {
             ) : (
               p.type
             )}
-            {isEditing && <Button danger icon={<DeleteOutlined />} onClick={() => removePrice(index)} />}
+            {isEditing && (
+              <>
+                <strong>Active:</strong>
+                <Select
+                  value={p.isActive}
+                  onChange={(value) => handlePriceChange(index, "isActive", value)}
+                  style={{ width: "80px" }}
+                >
+                  <Select.Option value={true}>Yes</Select.Option>
+                  <Select.Option value={false}>No</Select.Option>
+                </Select>
+                <strong>Min Qty:</strong>
+                <Input
+                  type="number"
+                  value={p.minQuantity}
+                  onChange={(e) => handlePriceChange(index, "minQuantity", Number(e.target.value))}
+                  style={{ width: "80px" }}
+                  min={1}
+                />
+                <Button danger icon={<DeleteOutlined />} onClick={() => removePrice(index)} />
+              </>
+            )}
           </Space>
         </Paragraph>
       ))}
       {isEditing && (
         <Button icon={<PlusOutlined />} onClick={addPrice}>
           Add Price
-        </Button>
-      )}
-
-      {/* Custom attributes section */}
-      <Title level={4}>Custom Attributes</Title>
-      <Card style={{ background: "#f9f9f9", padding: "15px", borderRadius: "10px" }}>
-        {item.keyvalue && item.keyvalue.length > 0 ? (
-          item.keyvalue.map((pair, index) => (
-            <Row key={index} gutter={16} align="middle" style={{ marginBottom: "10px" }}>
-              <Col span={6}>
-                <Input
-                  placeholder="Key"
-                  value={pair.key}
-                  onChange={(e) => handleKeyValueChange(index, "key", e.target.value)}
-                  allowClear
-                  disabled={!isEditing}
-                />
-              </Col>
-              <Col span={6}>
-                <Select
-                  value={pair.type}
-                  onChange={(value) => handleKeyValueChange(index, "type", value)}
-                  style={{ width: "100%" }}
-                  disabled={!isEditing}
-                >
-                  <Select.Option value="text">Text</Select.Option>
-                  <Select.Option value="number">Number</Select.Option>
-                  <Select.Option value="select">Select</Select.Option>
-                  <Select.Option value="checkbox">Checkbox</Select.Option>
-                  <Select.Option value="date">Date</Select.Option>
-                  <Select.Option value="time">Time</Select.Option>
-                  <Select.Option value="datetime">Date & Time</Select.Option>
-                  <Select.Option value="textarea">Text Area</Select.Option>
-                </Select>
-              </Col>
-              <Col span={6}>
-                <Input
-                  placeholder="Value"
-                  value={pair.value}
-                  onChange={(e) => handleKeyValueChange(index, "value", e.target.value)}
-                  allowClear
-                  disabled={!isEditing}
-                />
-              </Col>
-              <Col span={3}>
-                <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => removeKeyValuePair(index)}
-                  disabled={!isEditing}
-                />
-              </Col>
-            </Row>
-          ))
-        ) : (
-          <Text type="secondary">No custom attributes added yet.</Text>
-        )}
-      </Card>
-      {isEditing && (
-        <Button
-          type="dashed"
-          icon={<PlusOutlined />}
-          onClick={addKeyValuePair}
-          style={{ marginTop: "10px", width: "100%" }}
-        >
-          Add Custom Attribute
         </Button>
       )}
 

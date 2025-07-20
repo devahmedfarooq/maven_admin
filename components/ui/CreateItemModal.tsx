@@ -25,7 +25,7 @@ import { PricingManager } from "./PricingManager";
 
 const { TextArea } = Input;
 const { Option } = Select;
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 interface CreateItemModalProps {
   visible: boolean
@@ -152,20 +152,25 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
 
   useEffect(() => {
     if (visible && initialData && mode === "edit") {
+      // Handle type field properly - extract category ID if it's an object
+      const typeValue = typeof initialData.type === 'object' && initialData.type 
+        ? initialData.type._id 
+        : initialData.type;
+
       form.setFieldsValue({
         title: initialData.title,
         subtitle: initialData.subtitle,
         about: initialData.about,
-        type: initialData.type,
+        type: typeValue,
         subType: initialData.subType,
         location: initialData.location,
         price: initialData.price || [],
       })
 
       // If there's a type, load its subcategories
-      if (initialData.type) {
-        setSelectedCategory(initialData.type)
-        const category = categories.find((cat) => cat._id === initialData.type)
+      if (typeValue) {
+        setSelectedCategory(typeValue)
+        const category = categories.find((cat) => cat._id === typeValue)
         if (category && category.hasSubType) {
           setSubcategories(category.subName || [])
         }
@@ -213,22 +218,57 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
 
       // Handle file uploads if any
       const uploadedUrls: string[] = []
-      for (const file of fileList) {
-        if (file.originFileObj) {
-          const formData = new FormData()
-          formData.append("file", file.originFileObj)
-          const uploadResponse = await backendAPI.post("/utils/image", formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          })
-          uploadedUrls.push(uploadResponse.data.secure_url)
-        } else if (file.url) {
-          uploadedUrls.push(file.url)
+      
+      if (fileList.length > 0) {
+        message.loading({ content: 'Uploading images...', key: 'upload' })
+        
+        for (let i = 0; i < fileList.length; i++) {
+          const file = fileList[i]
+          
+          if (file.originFileObj) {
+            try {
+              const formData = new FormData()
+              formData.append("file", file.originFileObj)
+              
+              const uploadResponse = await backendAPI.post("/utils/image", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+                timeout: 30000, // 30 second timeout
+              })
+              
+              if (uploadResponse.data?.secure_url) {
+                uploadedUrls.push(uploadResponse.data.secure_url)
+                message.success({ content: `${file.name} uploaded successfully`, key: 'upload' })
+              } else {
+                throw new Error('Upload response missing secure_url')
+              }
+            } catch (error) {
+              console.error(`Error uploading ${file.name}:`, error)
+              message.error({ content: `Failed to upload ${file.name}`, key: 'upload' })
+              throw new Error(`Failed to upload ${file.name}`)
+            }
+          } else if (file.url) {
+            uploadedUrls.push(file.url)
+          }
         }
+        
+        message.success({ content: 'All images uploaded successfully', key: 'upload' })
       }
+
+      // Ensure price array has proper structure
+      const processedPrices = values.price?.map(price => ({
+        cost: price.cost || 0,
+        type: price.type || "",
+        isActive: price.isActive !== undefined ? price.isActive : true,
+        minQuantity: price.minQuantity || 1,
+        maxQuantity: price.maxQuantity,
+        description: price.description,
+        currency: price.currency || "PKR"
+      })) || []
 
       const itemData: CreateItemData = {
         ...values,
         imgs: uploadedUrls,
+        price: processedPrices,
       }
 
       if (mode === "create") {
@@ -250,19 +290,65 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
       setSelectedCategory(null)
     } catch (error) {
       console.error("Error saving item:", error)
-      message.error("Failed to save item")
+      message.error("Failed to save item. Please try again.")
     } finally {
       setLoading(false)
     }
   }
 
   const handleUploadChange = (info: any) => {
-    setFileList(info.fileList)
+    const { fileList: newFileList } = info;
+    
+    // Validate file types and sizes
+    const validFiles = newFileList.filter((file: any) => {
+      const isImage = file.type?.startsWith('image/') || file.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+      const isValidSize = file.size && file.size <= 5 * 1024 * 1024; // 5MB limit
+      
+      if (!isImage) {
+        message.error(`${file.name} is not a valid image file`);
+        return false;
+      }
+      
+      if (!isValidSize) {
+        message.error(`${file.name} is too large. Maximum size is 5MB`);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    setFileList(validFiles);
   }
 
   const handleRemoveFile = (file: UploadFile) => {
-    const newFileList = fileList.filter((f) => f.uid !== file.uid)
-    setFileList(newFileList)
+    Modal.confirm({
+      title: 'Remove Image',
+      content: 'Are you sure you want to remove this image?',
+      okText: 'Remove',
+      cancelText: 'Cancel',
+      onOk: () => {
+        const newFileList = fileList.filter((f) => f.uid !== file.uid);
+        setFileList(newFileList);
+        message.success('Image removed successfully');
+      }
+    });
+  }
+
+  const beforeUpload = (file: any) => {
+    const isImage = file.type?.startsWith('image/') || file.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+    const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
+    
+    if (!isImage) {
+      message.error('You can only upload image files!');
+      return false;
+    }
+    
+    if (!isValidSize) {
+      message.error('Image must be smaller than 5MB!');
+      return false;
+    }
+    
+    return false; // Prevent auto upload
   }
 
   return (
@@ -282,8 +368,7 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{
-          price: [{ cost: 0, type: "" }],
-          keyvalue: [{ key: "", value: "", type: "" }],
+          price: [{ cost: 0, type: "", isActive: true, minQuantity: 1, currency: "PKR" }],
         }}
       >
         <div className="grid grid-cols-2 gap-4">
@@ -422,62 +507,25 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
           <PricingManager />
         </Form.Item>
 
-        <Form.List name="keyvalue">
-          {(fields, { add, remove }) => (
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-medium">Additional Details</label>
-                <Button
-                  type="dashed"
-                  onClick={() => add()}
-                  icon={<PlusOutlined />}
-                  size="small"
-                >
-                  Add Detail
-                </Button>
-              </div>
-              {fields.map(({ key, name, ...restField }) => (
-                <Space key={key} style={{ display: "flex", marginBottom: 8 }}>
-                  <Form.Item
-                    {...restField}
-                    name={[name, "key"]}
-                    rules={[{ required: true, message: "Missing key" }]}
-                  >
-                    <Input placeholder="Key" />
-                  </Form.Item>
-                  <Form.Item
-                    {...restField}
-                    name={[name, "value"]}
-                  >
-                    <Input placeholder="Value" />
-                  </Form.Item>
-                  <Form.Item
-                    {...restField}
-                    name={[name, "type"]}
-                    rules={[{ required: true, message: "Missing type" }]}
-                  >
-                    <Input placeholder="Type" />
-                  </Form.Item>
-                  <Button
-                    type="text"
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => remove(name)}
-                  />
-                </Space>
-              ))}
-            </div>
-          )}
-        </Form.List>
-
         <Form.Item label="Images">
+          <div style={{ marginBottom: 8 }}>
+            <Text type="secondary">
+              Upload up to 8 images. Supported formats: JPG, PNG, GIF, WebP. Max size: 5MB per image.
+            </Text>
+          </div>
           <Upload
             listType="picture-card"
             fileList={fileList}
             onChange={handleUploadChange}
             onRemove={handleRemoveFile}
-            beforeUpload={() => false}
+            beforeUpload={beforeUpload}
             multiple
+            accept="image/*"
+            showUploadList={{
+              showPreviewIcon: true,
+              showRemoveIcon: true,
+              showDownloadIcon: false,
+            }}
           >
             {fileList.length >= 8 ? null : (
               <div>
@@ -486,6 +534,13 @@ const CreateItemModal: React.FC<CreateItemModalProps> = ({
               </div>
             )}
           </Upload>
+          {fileList.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary">
+                {fileList.length} image(s) selected
+              </Text>
+            </div>
+          )}
         </Form.Item>
 
         <Form.Item>

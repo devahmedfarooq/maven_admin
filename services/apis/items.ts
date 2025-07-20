@@ -6,12 +6,20 @@ interface Item {
   title: string
   subtitle?: string
   about?: string
-  type?: string
+  type?: string | { _id: string; name: string }
   subType?: string
   location?: string
   imgs?: string[]
-  price: { cost: number; type: string }[]
-  keyvalue?: { key: string; value?: string; type: string }[]
+  price: { 
+    cost: number; 
+    type: string; 
+    isActive?: boolean;
+    minQuantity?: number;
+    maxQuantity?: number;
+    description?: string;
+    currency?: string;
+  }[]
+  reviews?: { img: string; name: string; rating: number }[]
 }
 
 interface CreateItemData {
@@ -22,8 +30,15 @@ interface CreateItemData {
   subType?: string
   location?: string
   imgs?: string[]
-  price: { cost: number; type: string }[]
-  keyvalue?: { key: string; value?: string; type: string }[]
+  price: { 
+    cost: number; 
+    type: string; 
+    isActive?: boolean;
+    minQuantity?: number;
+    maxQuantity?: number;
+    description?: string;
+    currency?: string;
+  }[]
 }
 
 interface UpdateItemParams {
@@ -46,7 +61,6 @@ export const useItems = (page = 1, limit = 10, filters = {}) => {
         throw error
       }
     },
-    keepPreviousData: true,
   })
 }
 
@@ -60,7 +74,7 @@ export function useCreateItem() {
         console.log("Creating item with data:", newItem)
         const response = await axios.post("/items", newItem)
         return response.data
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error creating item:", error.response?.data || error.message)
         throw error
       }
@@ -81,7 +95,7 @@ export const useUpdateItem = () => {
         console.log("Updating item with data:", data)
         const response = await axios.patch(`/items/${id}`, data)
         return response.data
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error updating item:", error.response?.data || error.message)
         throw error
       }
@@ -103,7 +117,7 @@ export const useDeleteItem = () => {
       try {
         const response = await axios.delete(`/items/${id}`)
         return response.data
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error deleting item:", error.response?.data || error.message)
         throw error
       }
@@ -123,7 +137,7 @@ export const useGetItem = (id: string) => {
       try {
         const response = await axios.get(`/items/${id}`)
         return response.data
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error getting item:", error.response?.data || error.message)
         throw error
       }
@@ -140,7 +154,7 @@ export const useGetItems = (filters = {}) => {
       try {
         const response = await axios.get("/items", { params: filters })
         return response.data
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error getting items:", error.response?.data || error.message)
         throw error
       }

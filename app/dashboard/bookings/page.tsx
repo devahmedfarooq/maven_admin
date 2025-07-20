@@ -48,7 +48,6 @@ interface Booking {
     date?: string
     time?: string
   }
-  details: { type: string; key: string; value: any }[]
   createdAt: string
   status: string
 }
@@ -115,7 +114,6 @@ const Page = () => {
     const item = JSON.parse(values.summary.items)
     mutation.mutate({
       appointment: values.appointment,
-      details: values.details,
       summary: {
         items: [
           {
@@ -426,48 +424,9 @@ const Page = () => {
           >
             <Input />
           </Form.Item>
-          <Form.Item label="Address" name={["personalInfo", "address"]}>
+          <Form.Item label="Address" name="address">
             <Input />
           </Form.Item>
-
-          {/* Details Section */}
-          {selectedItem && selectedItem.keyvalue && selectedItem.keyvalue.length > 0 && (
-            <>
-              <Title level={4}>Details</Title>
-              <Title level={5}>{selectedItem.title}</Title>
-
-              {selectedItem.keyvalue.map((detail: any, index: number) => (
-                <div key={`detail-${index}`}>
-                  <Form.Item style={{ display: "none" }} name={["details", index, "key"]} initialValue={detail.key} />
-                  <Form.Item style={{ display: "none" }} name={["details", index, "type"]} initialValue={detail.type} />
-
-                  <Form.Item
-                    label={detail.key}
-                    name={["details", index, "value"]}
-                    rules={[{ required: true, message: `Please provide ${detail.key}` }]}
-                  >
-                    {detail.type === "text" ? (
-                      <Input placeholder="Enter your response" />
-                    ) : detail.type === "checkbox" ? (
-                      <Checkbox>Check if applicable</Checkbox>
-                    ) : detail.type === "select" ? (
-                      <Select placeholder="Select an option">
-                        {detail.options?.map((opt: string) => (
-                          <Option key={opt} value={opt}>
-                            {opt}
-                          </Option>
-                        ))}
-                      </Select>
-                    ) : detail.type === "date" ? (
-                      <DatePicker style={{ width: "100%" }} />
-                    ) : detail.type === "time" ? (
-                      <Input placeholder="Enter time (e.g., 10:00 AM)" />
-                    ) : null}
-                  </Form.Item>
-                </div>
-              ))}
-            </>
-          )}
 
           {/* Submit Button */}
           <Button type="primary" htmlType="submit" block loading={mutation.isLoading}>

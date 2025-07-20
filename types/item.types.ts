@@ -3,33 +3,28 @@ import { BaseEntity } from './api.types';
 export interface PriceItem {
   cost: number;
   type: string;
-}
-
-export interface KeyValuePair {
-  key: string;
-  value?: string;
-  type: string;
+  isActive?: boolean;
+  minQuantity?: number;
+  maxQuantity?: number;
+  description?: string;
+  currency?: string;
 }
 
 export interface Review {
-  _id: string;
-  userId: string;
-  userName: string;
+  img: string;
+  name: string;
   rating: number;
-  comment: string;
-  createdAt: string;
 }
 
 export interface Item extends BaseEntity {
   title: string;
   subtitle?: string;
   about?: string;
-  type?: string;
+  type?: string | { _id: string; name: string };
   subType?: string;
   location?: string;
   imgs?: string[];
   price: PriceItem[];
-  keyvalue?: KeyValuePair[];
   reviews?: Review[];
   rating?: number;
   totalReviews?: number;
@@ -46,7 +41,6 @@ export interface ItemFormData {
   location?: string;
   imgs?: string[];
   price: PriceItem[];
-  keyvalue?: KeyValuePair[];
   featured?: boolean;
   active?: boolean;
 }
@@ -73,7 +67,6 @@ export interface CreateItemData {
   location?: string;
   imgs?: string[];
   price: PriceItem[];
-  keyvalue?: KeyValuePair[];
   featured?: boolean;
   active?: boolean;
 }
@@ -87,7 +80,6 @@ export interface UpdateItemData {
   location?: string;
   imgs?: string[];
   price?: PriceItem[];
-  keyvalue?: KeyValuePair[];
   featured?: boolean;
   active?: boolean;
 }
