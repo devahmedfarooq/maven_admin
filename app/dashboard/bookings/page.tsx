@@ -47,6 +47,10 @@ interface Booking {
   appointment?: {
     date?: string
     time?: string
+    startDate?: string
+    startTime?: string
+    endDate?: string
+    endTime?: string
   }
   createdAt: string
   status: string

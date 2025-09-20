@@ -12,6 +12,12 @@ export interface Booking extends BaseEntity {
   totalAmount: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  appointment?: {
+    startDate?: string;
+    startTime?: string;
+    endDate?: string;
+    endTime?: string;
+  };
   customerDetails: {
     name: string;
     email: string;
@@ -63,13 +69,31 @@ export interface BookingStats {
 }
 
 export interface CreateBookingData {
-  userId: string;
-  itemId: string;
-  bookingDate: string;
-  startDate: string;
+  userId?: string;
+  itemId?: string;
+  bookingDate?: string;
+  startDate?: string;
   endDate?: string;
-  totalAmount: number;
-  customerDetails: {
+  totalAmount?: number;
+  appointment?: {
+    startDate?: string;
+    startTime?: string;
+    endDate?: string;
+    endTime?: string;
+  };
+  summary?: {
+    items: { name: string; cost: number; amount: number; id: string; img: string }[];
+    subtotal: number;
+    gst: number;
+    total: number;
+  };
+  personalInfo?: {
+    name: string;
+    email: string;
+    phone: string;
+    address?: string;
+  };
+  customerDetails?: {
     name: string;
     email: string;
     phone: string;

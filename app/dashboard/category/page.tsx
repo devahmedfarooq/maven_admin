@@ -35,20 +35,24 @@ interface Category {
   name: string
   hasSubType: boolean
   subName: string[]
-  appointmentDateLabel?: string
-  appointmentTimeLabel?: string
+  appointmentStartDateLabel?: string
+  appointmentStartTimeLabel?: string
+  appointmentEndDateLabel?: string
+  appointmentEndTimeLabel?: string
   appointmentDescription?: string
-  requiresAppointment?: boolean
+  requiresDuration?: boolean
   icon?: string
 }
 
 interface CategoryFormValues {
   name: string
   hasSubType: boolean
-  appointmentDateLabel: string
-  appointmentTimeLabel: string
+  appointmentStartDateLabel: string
+  appointmentStartTimeLabel: string
+  appointmentEndDateLabel: string
+  appointmentEndTimeLabel: string
   appointmentDescription: string
-  requiresAppointment: boolean
+  requiresDuration: boolean
   icon: string
 }
 
@@ -93,10 +97,12 @@ export default function CategoryManagement() {
         category: {
           name: values.name,
           hasSubType: values.hasSubType,
-          appointmentDateLabel: values.appointmentDateLabel,
-          appointmentTimeLabel: values.appointmentTimeLabel,
+          appointmentStartDateLabel: values.appointmentStartDateLabel,
+          appointmentStartTimeLabel: values.appointmentStartTimeLabel,
+          appointmentEndDateLabel: values.appointmentEndDateLabel,
+          appointmentEndTimeLabel: values.appointmentEndTimeLabel,
           appointmentDescription: values.appointmentDescription,
-          requiresAppointment: values.requiresAppointment,
+          requiresDuration: values.requiresDuration,
           icon: values.icon,
         },
       })
@@ -117,10 +123,12 @@ export default function CategoryManagement() {
       await axios.patch(`/category/${editingCategory._id}`, {
         name: values.name,
         hasSubType: values.hasSubType,
-        appointmentDateLabel: values.appointmentDateLabel,
-        appointmentTimeLabel: values.appointmentTimeLabel,
+        appointmentStartDateLabel: values.appointmentStartDateLabel,
+        appointmentStartTimeLabel: values.appointmentStartTimeLabel,
+        appointmentEndDateLabel: values.appointmentEndDateLabel,
+        appointmentEndTimeLabel: values.appointmentEndTimeLabel,
         appointmentDescription: values.appointmentDescription,
-        requiresAppointment: values.requiresAppointment,
+        requiresDuration: values.requiresDuration,
         icon: values.icon,
       })
       message.success("Category updated successfully")
@@ -187,10 +195,12 @@ export default function CategoryManagement() {
     setEditingCategory(null)
     categoryForm.resetFields()
     categoryForm.setFieldsValue({
-      appointmentDateLabel: "Appointment Date",
-      appointmentTimeLabel: "Appointment Time",
-      appointmentDescription: "Select your preferred appointment date and time",
-      requiresAppointment: true,
+      appointmentStartDateLabel: "Start Date",
+      appointmentStartTimeLabel: "Start Time",
+      appointmentEndDateLabel: "End Date",
+      appointmentEndTimeLabel: "End Time",
+      appointmentDescription: "Select your preferred start and end dates",
+      requiresDuration: false,
       icon: "", // Initialize icon field
     })
     setCategoryModalVisible(true)
@@ -203,8 +213,13 @@ export default function CategoryManagement() {
       hasSubType: category.hasSubType,
       appointmentDateLabel: category.appointmentDateLabel || "Appointment Date",
       appointmentTimeLabel: category.appointmentTimeLabel || "Appointment Time",
+      appointmentStartDateLabel: category.appointmentStartDateLabel || "Start Date",
+      appointmentStartTimeLabel: category.appointmentStartTimeLabel || "Start Time",
+      appointmentEndDateLabel: category.appointmentEndDateLabel || "End Date",
+      appointmentEndTimeLabel: category.appointmentEndTimeLabel || "End Time",
       appointmentDescription: category.appointmentDescription || "Select your preferred appointment date and time",
       requiresAppointment: category.requiresAppointment !== false,
+      requiresDuration: category.requiresDuration || false,
       icon: category.icon || "", // Set icon field
     })
     setCategoryModalVisible(true)
@@ -242,15 +257,34 @@ export default function CategoryManagement() {
       render: (hasSubType: boolean) => (hasSubType ? "Yes" : "No"),
     },
     {
+      title: "Requires Appointment",
+      dataIndex: "requiresAppointment",
+      key: "requiresAppointment",
+      render: (requiresAppointment: boolean) => (requiresAppointment !== false ? "Yes" : "No"),
+    },
+    {
+      title: "Requires Duration (Start/End)",
+      dataIndex: "requiresDuration",
+      key: "requiresDuration",
+      render: (requiresDuration: boolean) => (requiresDuration ? "Yes" : "No"),
+    },
+    {
       title: "Appointment Settings",
       key: "appointmentSettings",
       render: (_: any, record: Category) => (
         <div>
-          <div><strong>Requires Appointment:</strong> {record.requiresAppointment !== false ? "Yes" : "No"}</div>
           {record.requiresAppointment !== false && (
             <>
               <div><strong>Date Label:</strong> {record.appointmentDateLabel || "Appointment Date"}</div>
               <div><strong>Time Label:</strong> {record.appointmentTimeLabel || "Appointment Time"}</div>
+              {record.requiresDuration && (
+                <>
+                  <div><strong>Start Date Label:</strong> {record.appointmentStartDateLabel || "Start Date"}</div>
+                  <div><strong>Start Time Label:</strong> {record.appointmentStartTimeLabel || "Start Time"}</div>
+                  <div><strong>End Date Label:</strong> {record.appointmentEndDateLabel || "End Date"}</div>
+                  <div><strong>End Time Label:</strong> {record.appointmentEndTimeLabel || "End Time"}</div>
+                </>
+              )}
             </>
           )}
         </div>
@@ -393,6 +427,10 @@ export default function CategoryManagement() {
             <Switch />
           </Form.Item>
 
+          <Form.Item name="requiresDuration" label="Requires Duration (Start/End)" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+
           <Form.Item
             name="appointmentDateLabel"
             label="Appointment Date Label"
@@ -407,6 +445,38 @@ export default function CategoryManagement() {
             rules={[{ required: true, message: "Please enter appointment time label" }]}
           >
             <Input placeholder="e.g., Appointment Time, Booking Time" />
+          </Form.Item>
+
+          <Form.Item
+            name="appointmentStartDateLabel"
+            label="Start Date Label"
+            rules={[{ required: true, message: "Please enter start date label" }]}
+          >
+            <Input placeholder="e.g., Start Date, Check-in Date" />
+          </Form.Item>
+
+          <Form.Item
+            name="appointmentStartTimeLabel"
+            label="Start Time Label"
+            rules={[{ required: true, message: "Please enter start time label" }]}
+          >
+            <Input placeholder="e.g., Start Time, Check-in Time" />
+          </Form.Item>
+
+          <Form.Item
+            name="appointmentEndDateLabel"
+            label="End Date Label"
+            rules={[{ required: true, message: "Please enter end date label" }]}
+          >
+            <Input placeholder="e.g., End Date, Check-out Date" />
+          </Form.Item>
+
+          <Form.Item
+            name="appointmentEndTimeLabel"
+            label="End Time Label"
+            rules={[{ required: true, message: "Please enter end time label" }]}
+          >
+            <Input placeholder="e.g., End Time, Check-out Time" />
           </Form.Item>
 
           <Form.Item

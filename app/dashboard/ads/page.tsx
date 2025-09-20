@@ -112,7 +112,8 @@ const AdsPage = () => {
                     startDate: filters.startDate?.toISOString() || undefined,
                     endDate: filters.endDate?.toISOString() || undefined,
                     minClicks: filters.minClicks || undefined,
-                    minViews: filters.minViews || undefined
+                    minViews: filters.minViews || undefined,
+                    activeOnly: false
                 };
 
                 // Remove undefined values
@@ -122,18 +123,25 @@ const AdsPage = () => {
                     }
                 });
 
-                const { data } = await axios.get("/admin/ads", { params });
-                return {
-                    data: data.data.map((ad: any) => ({
-                        _id: ad._id,
-                        imgSrc: ad.ads?.[0]?.imgSrc || '',
-                        title: ad.ads?.[0]?.title || '',
-                        href: ad.ads?.[0]?.href || '',
-                        campinStart: ad.ads?.[0]?.campinStart || null,
+                const { data } = await axios.get("/admin/ads/admin", { params });
+                
+                // Flatten the nested ads structure for the table
+                const flattenedData = data.data.flatMap((adDoc: any) => 
+                    adDoc.ads.map((ad: any, index: number) => ({
+                        _id: adDoc._id,
+                        imgSrc: ad.imgSrc,
+                        title: ad.title,
+                        href: ad.href,
+                        campinStart: ad.campinStart,
+                        active: ad.active,
                         clicked: ad.clicked || 0,
                         viewed: ad.viewed || 0,
-                        active :ad.ads?.[0]?.active || false
-                    })),
+                        imageIndex: index
+                    }))
+                );
+
+                return {
+                    data: flattenedData,
                     pagination: data.pagination
                 };
             } catch (error: any) {
