@@ -67,12 +67,12 @@ const initialValue = [
 
 // Custom editor functions
 const CustomEditor = {
-  isMarkActive(editor, format) {
+  isMarkActive(editor: any, format: any) {
     const marks = Editor.marks(editor)
-    return marks ? marks[format] === true : false
+    return marks ? (marks as any)[format] === true : false
   },
 
-  toggleMark(editor, format) {
+  toggleMark(editor: any, format: any) {
     const isActive = CustomEditor.isMarkActive(editor, format)
 
     if (isActive) {
@@ -82,21 +82,21 @@ const CustomEditor = {
     }
   },
 
-  isBlockActive(editor, format, blockType = "type") {
+  isBlockActive(editor: any, format: any, blockType = "type") {
     const { selection } = editor
     if (!selection) return false
 
     const [match] = Array.from(
       Editor.nodes(editor, {
         at: Editor.unhangRange(editor, selection),
-        match: (n) => !Editor.isEditor(n) && SlateElement.isElement(n) && n[blockType] === format,
+        match: (n) => !Editor.isEditor(n) && SlateElement.isElement(n) && (n as any)[blockType] === format,
       }),
     )
 
     return !!match
   },
 
-  toggleBlock(editor, format, blockType = "type") {
+  toggleBlock(editor: any, format: any, blockType = "type") {
     const isActive = CustomEditor.isBlockActive(editor, format, blockType)
     const isList = format === ELEMENT_TYPES.NUMBERED_LIST || format === ELEMENT_TYPES.BULLETED_LIST
 
@@ -104,7 +104,7 @@ const CustomEditor = {
       match: (n) =>
         !Editor.isEditor(n) &&
         SlateElement.isElement(n) &&
-        [ELEMENT_TYPES.NUMBERED_LIST, ELEMENT_TYPES.BULLETED_LIST].includes(n.type),
+        [ELEMENT_TYPES.NUMBERED_LIST, ELEMENT_TYPES.BULLETED_LIST].includes((n as any).type),
       split: true,
     })
 
@@ -112,7 +112,7 @@ const CustomEditor = {
       type: isActive ? ELEMENT_TYPES.PARAGRAPH : isList ? ELEMENT_TYPES.LIST_ITEM : format,
     }
 
-    Transforms.setNodes(editor, newProperties)
+    Transforms.setNodes(editor, newProperties as any)
 
     if (!isActive && isList) {
       const block = { type: format, children: [] }
@@ -120,7 +120,7 @@ const CustomEditor = {
     }
   },
 
-  toggleAlign(editor, align) {
+  toggleAlign(editor: any, align: any) {
     const { selection } = editor
     if (!selection) return
 
@@ -133,18 +133,18 @@ const CustomEditor = {
 
     if (match) {
       const [node] = match
-      const currentAlign = node.align || TEXT_ALIGN_TYPES.LEFT
+      const currentAlign = (node as any).align || TEXT_ALIGN_TYPES.LEFT
       const newAlign = currentAlign === align ? TEXT_ALIGN_TYPES.LEFT : align
 
       Transforms.setNodes(
         editor,
-        { align: newAlign },
+        { align: newAlign } as any,
         { match: (n) => !Editor.isEditor(n) && SlateElement.isElement(n) },
       )
     }
   },
 
-  insertImage(editor, url, alt = "", width = "100%", align = "center") {
+  insertImage(editor: any, url: any, alt = "", width = "100%", align = "center") {
     const image = {
       type: ELEMENT_TYPES.IMAGE,
       url,
@@ -171,14 +171,14 @@ const CustomEditor = {
       if (!nextPath) {
         Transforms.insertNodes(
           editor,
-          { type: ELEMENT_TYPES.PARAGRAPH, children: [{ text: "" }] },
+          { type: ELEMENT_TYPES.PARAGRAPH, children: [{ text: "" }] } as any,
           { at: Editor.end(editor, []) },
         )
       }
     }
   },
 
-  insertLink(editor, url, text) {
+  insertLink(editor: any, url: any, text: any) {
     if (editor.selection) {
       const link = {
         type: ELEMENT_TYPES.LINK,
@@ -197,7 +197,7 @@ const CustomEditor = {
 }
 
 // Slate plugins
-const withImages = (editor) => {
+const withImages = (editor: any) => {
   const { isVoid, deleteBackward } = editor
 
   editor.isVoid = (element) => {

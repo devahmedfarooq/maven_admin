@@ -9,6 +9,13 @@ export interface Category extends BaseEntity {
   active?: boolean;
   featured?: boolean;
   itemCount?: number;
+  appointmentDateLabel?: string;
+  appointmentTimeLabel?: string;
+  appointmentStartDateLabel?: string;
+  appointmentStartTimeLabel?: string;
+  appointmentEndDateLabel?: string;
+  appointmentEndTimeLabel?: string;
+  appointmentDescription?: string;
 }
 
 export interface CategoryFormData {
@@ -19,6 +26,13 @@ export interface CategoryFormData {
   icon?: string;
   active?: boolean;
   featured?: boolean;
+  appointmentDateLabel?: string;
+  appointmentTimeLabel?: string;
+  appointmentStartDateLabel?: string;
+  appointmentStartTimeLabel?: string;
+  appointmentEndDateLabel?: string;
+  appointmentEndTimeLabel?: string;
+  appointmentDescription?: string;
 }
 
 export interface CategoryFilters {
@@ -39,6 +53,13 @@ export interface CreateCategoryData {
     icon?: string;
     active?: boolean;
     featured?: boolean;
+    appointmentDateLabel?: string;
+    appointmentTimeLabel?: string;
+    appointmentStartDateLabel?: string;
+    appointmentStartTimeLabel?: string;
+    appointmentEndDateLabel?: string;
+    appointmentEndTimeLabel?: string;
+    appointmentDescription?: string;
   };
 }
 
@@ -57,6 +78,13 @@ export interface UpdateCategoryData {
   icon?: string;
   active?: boolean;
   featured?: boolean;
+  appointmentDateLabel?: string;
+  appointmentTimeLabel?: string;
+  appointmentStartDateLabel?: string;
+  appointmentStartTimeLabel?: string;
+  appointmentEndDateLabel?: string;
+  appointmentEndTimeLabel?: string;
+  appointmentDescription?: string;
 }
 
 export interface CategoryStats {

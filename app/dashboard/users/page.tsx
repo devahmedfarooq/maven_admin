@@ -18,7 +18,7 @@ export default function Page() {
         refetch();
     }, [page, pageSize]);
 
-    const dataSource = data?.users?.map(user => ({
+    const dataSource = (data as any)?.users?.map((user: any) => ({
         key: user._id,
         name: user.name,
         email: user.email,
@@ -40,7 +40,7 @@ export default function Page() {
             title: "Profile Image",
             dataIndex: "image",
             key: "image",
-            render: (image, record) =>
+            render: (image: any, record: any) =>
                 image ? (
                     <img className="w-10 h-10 rounded-full border border-gray-300 shadow-sm" src={image} alt={record.name} />
                 ) : (
@@ -49,7 +49,7 @@ export default function Page() {
         },
         {
             title: "Details",
-            render: ({ key }) => <Link href={`/dashboard/users/${key}`} className="text-blue-500 hover:underline">More Details</Link>,
+            render: ({ key }: any) => <Link href={`/dashboard/users/${key}`} className="text-blue-500 hover:underline">More Details</Link>,
         },
     ];
 
@@ -59,10 +59,10 @@ export default function Page() {
                 {/* Stats Cards & Create User Button */}
                 <Space size="middle" className="w-full flex flex-wrap justify-start">
                     <Card title="New Users" className="w-48 text-center">
-                        <span className="text-xl font-bold">{data?.newUsers || 0}</span>
+                        <span className="text-xl font-bold">{(data as any)?.newUsers || 0}</span>
                     </Card>
                     <Card title="Total Users" className="w-48 text-center">
-                        <span className="text-xl font-bold">{data?.totalUsers || 0}</span>
+                        <span className="text-xl font-bold">{(data as any)?.totalUsers || 0}</span>
                     </Card>
                     <Button type="primary" onClick={() => setIsModalVisible(true)}>
                         Create User
@@ -87,7 +87,7 @@ export default function Page() {
                 <Pagination
                     current={page}
                     pageSize={pageSize}
-                    total={data?.totalUsers || 0}
+                    total={(data as any)?.totalUsers || 0}
                     onChange={(newPage, newPageSize) => {
                         setPage(newPage);
                         setPageSize(newPageSize);

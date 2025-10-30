@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
 export async function signin(prevState: SigninFormState, formData: FormData): Promise<SigninFormState> {
 
     const backendAPI = axios.create({
-        baseURL: 'http://localhost:3000'
+        baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
     })
 
     try {

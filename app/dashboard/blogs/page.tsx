@@ -20,19 +20,19 @@ interface BlogData {
 }
 
 const fetchBlogs = async () => {
-  const { data } = await axios.get("http://localhost:3000/blogs");
+  const { data } = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/blogs`);
   return data;
 };
 
 const createBlog = async (blogData: BlogData) => {
-  const { data } = await axios.post("http://localhost:3000/blogs", blogData);
+  const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/blogs`, blogData);
   return data;
 };
 
 const uploadImage = async (file: File) => {
   const formData = new FormData();
   formData.append("file", file);
-  const { data } = await axios.post("http://localhost:3000/utils/image", formData, {
+  const { data } = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/utils/image`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return data.secure_url;

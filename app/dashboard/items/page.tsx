@@ -18,12 +18,12 @@ export default function ItemsPage() {
   }, [page, pageSize, refetch])
 
   const dataSource =
-    data?.items?.map((item) => ({
+    data?.items?.map((item: any) => ({
       key: item._id,
       title: item.title,
       type: item.type,
       subType: item.subType,
-      price: item.price.map((p) => `${p.type}: $${p.cost}`).join(", "),
+      price: item.price.map((p: any) => `${p.type}: $${p.cost}`).join(", "),
       location: item.location || "",
     })) || []
 
@@ -37,13 +37,13 @@ export default function ItemsPage() {
       title: "Category",
       dataIndex: "type",
       key: "type",
-      render: (category) => (category && category.name ? <p>{category.name}</p> : <p>N/A</p>),
+      render: (category: any) => (category && category.name ? <p>{category.name}</p> : <p>N/A</p>),
     },
     {
       title: "Subcategory",
       dataIndex: "subType",
       key: "subType",
-      render: (subType) => (subType ? <p>{subType}</p> : <p>N/A</p>),
+      render: (subType: any) => (subType ? <p>{subType}</p> : <p>N/A</p>),
     },
     {
       title: "Price",
@@ -54,11 +54,11 @@ export default function ItemsPage() {
       title: "Location",
       dataIndex: "location",
       key: "location",
-      render: (location) => (location ? <p style={{ textTransform: "capitalize" }}> {location} </p> : "N/A"),
+      render: (location: any) => (location ? <p style={{ textTransform: "capitalize" }}> {location} </p> : "N/A"),
     },
     {
       title: "Actions",
-      render: ({ key }) => (
+      render: ({ key }: any) => (
         <Link href={`/dashboard/items/${key}`} className="text-blue-500 hover:underline">
           View Details
         </Link>

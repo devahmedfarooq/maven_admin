@@ -35,24 +35,30 @@ interface Category {
   name: string
   hasSubType: boolean
   subName: string[]
+  appointmentDateLabel?: string
+  appointmentTimeLabel?: string
   appointmentStartDateLabel?: string
   appointmentStartTimeLabel?: string
   appointmentEndDateLabel?: string
   appointmentEndTimeLabel?: string
   appointmentDescription?: string
   requiresDuration?: boolean
+  requiresAppointment?: boolean
   icon?: string
 }
 
 interface CategoryFormValues {
   name: string
   hasSubType: boolean
+  appointmentDateLabel: string
+  appointmentTimeLabel: string
   appointmentStartDateLabel: string
   appointmentStartTimeLabel: string
   appointmentEndDateLabel: string
   appointmentEndTimeLabel: string
   appointmentDescription: string
   requiresDuration: boolean
+  requiresAppointment: boolean
   icon: string
 }
 
