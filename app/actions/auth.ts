@@ -31,7 +31,9 @@ export async function signin(prevState: SigninFormState, formData: FormData): Pr
         const data = validatedValues.data;
         const user = (await backendAPI.post("/auth/admin-login", data)).data;
 
+        console.log("User data received from backend:", user);
         if(user) {
+            console.log("Creating session for user.");
             const retrivedData = user.token
             await createSession(retrivedData)
             redirect('/dashboard');
