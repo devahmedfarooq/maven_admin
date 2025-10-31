@@ -4,7 +4,6 @@ import { SessionPayload } from '@/app/lib/definations'
 import 'server-only'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { NextResponse } from 'next/server'
 const secretKey = process.env.SESSION_SECRET
 if (!secretKey) {
     throw new Error('SESSION_SECRET environment variable is not set')
@@ -30,21 +29,18 @@ export async function decrypt(session: string | undefined = '') {
     }
 }
 
-export async function createSession(payload: SessionPayload) {
-  const expireAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-  const session = await encrypt(payload)
+export async function createSession(payLoad: SessionPayload) {
+    const expireAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    const session = await encrypt(payLoad)
+    const CookieStore = await cookies()
 
-  const response = NextResponse.redirect(new URL('/dashboard', process.env.NEXT_PUBLIC_APP_URL))
-
-  response.cookies.set('session', session, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    expires: expireAt,
-    sameSite: 'lax',
-    path: '/',
-  })
-
-  return response
+    CookieStore.set('session' , session, {
+        httpOnly : true,
+        secure : process.env.NODE_ENV === 'production',
+        expires : expireAt,
+        sameSite : 'lax',
+        path : '/'
+    })
 }
 
 

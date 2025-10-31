@@ -35,7 +35,8 @@ export async function signin(prevState: SigninFormState, formData: FormData): Pr
         if(user) {
             console.log("Creating session for user.");
             const retrivedData = user.token
-         await createSession(retrivedData)
+            await createSession(retrivedData)
+            redirect('/dashboard');
         }
 
         return { msg: 'User has been logged in' };
