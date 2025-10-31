@@ -4,12 +4,17 @@ import { cookies } from 'next/headers';
 
 export async function middleware(request: NextRequest) {
   const cookieStore = await cookies();
-  const session = cookieStore.get('session')?.value;
+  const session =  cookieStore.get('session')?.value;
 
   const { pathname } = request.nextUrl;
   
   // Debug logging (remove in production)
   console.log('Middleware - Path:', pathname, 'Session exists:', !!session);
+  console.log('Middleware - Full URL:', request.url);
+  console.log('Middleware - All cookies:', cookieStore.getAll().map(c => c.name));
+  if (session) {
+    console.log('Middleware - Session found, length:', session.length);
+  }
 
   // Allow requests to static files, API routes, and Next.js internals
   if (
