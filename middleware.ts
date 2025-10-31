@@ -7,6 +7,9 @@ export async function middleware(request: NextRequest) {
   const session = cookieStore.get('session')?.value;
 
   const { pathname } = request.nextUrl;
+  
+  // Debug logging (remove in production)
+  console.log('Middleware - Path:', pathname, 'Session exists:', !!session);
 
   // Allow requests to static files, API routes, and Next.js internals
   if (
@@ -22,16 +25,36 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect unauthenticated users trying to access protected routes
-  if (!session && (pathname.startsWith('/dashboard') || !pathname.includes('/auth'))) {
+  if (!session && pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/auth', request.url));
   }
 
- 
+  // Redirect from root to auth if not authenticated, to dashboard if authenticated
+  if (pathname === '/') {
+    if (!session) {
+      return NextResponse.redirect(new URL('/auth', request.url));
+    } else {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  }
 
   // Redirect authenticated users away from the auth page
-  if (session && (pathname === '/auth' || !pathname.includes('/dashboard'))) {
+  if (session && pathname === '/auth') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 }

@@ -34,8 +34,8 @@ export async function signin(prevState: SigninFormState, formData: FormData): Pr
         if(user) {
             const retrivedData = user.token
             await createSession(retrivedData)
+            redirect('/dashboard');
         }
-      //  redirect('/dashboard');
 
         return { msg: 'User has been logged in' };
     } catch (err: any) {

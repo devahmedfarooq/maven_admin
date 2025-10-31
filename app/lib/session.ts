@@ -5,6 +5,9 @@ import 'server-only'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 const secretKey = process.env.SESSION_SECRET
+if (!secretKey) {
+    throw new Error('SESSION_SECRET environment variable is not set')
+}
 const encodedKey = new TextEncoder().encode(secretKey)
 
 export async function encrypt(payLoad: any) {
@@ -27,7 +30,7 @@ export async function decrypt(session: string | undefined = '') {
 }
 
 export async function createSession(payLoad: SessionPayload) {
-    const expireAt = new Date(Date.now() * 7 * 24 * 60 * 60 * 1000)
+    const expireAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     const session = await encrypt(payLoad)
     const CookieStore = await cookies()
 
@@ -65,6 +68,7 @@ export async function updateSession() {
 export async function deleteSession() {
     const cookieStore = await cookies()
     cookieStore.delete('session')
-    localStorage.removeItem('authToken')
+    // Note: localStorage can't be accessed in server components
+    // The client-side code should handle localStorage cleanup
     redirect('/auth')
   }

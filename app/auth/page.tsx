@@ -28,8 +28,7 @@ const AuthPage = () => {
         if (!isPending) {
             if (state?.msg) {
                 message.success(state.msg);
-
-                redirect('/dashboard')
+                // Redirect is now handled server-side in the signin action
             } else if (state?.error && (state.error.email.length > 0 || state.error.password.length > 0)) {
                 const emailErrors = state.error.email.join('\n');
                 const passwordErrors = state.error.password.join('\n');
