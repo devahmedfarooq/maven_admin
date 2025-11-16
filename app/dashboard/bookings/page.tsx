@@ -241,7 +241,12 @@ const Page = () => {
       </Row>
 
       {/* Filter Form */}
-      <Form form={filterForm} layout="inline"  onValuesChange={handleFilterChange} style={{ marginBottom: 20 }}>
+      <Form 
+        form={filterForm} 
+        layout="inline" 
+        onValuesChange={handleFilterChange} 
+        style={{ marginBottom: 20 }}
+      >
         <Form.Item label="Name" name="name">
           <Input placeholder="Filter by name" />
         </Form.Item>
