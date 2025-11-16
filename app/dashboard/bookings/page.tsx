@@ -30,7 +30,7 @@ const { Title } = Typography
 const { Option } = Select
 const { RangePicker } = DatePicker
 
-interface Booking {
+interface BookingResponse {
   _id: string
   personalInfo: {
     name: string
@@ -163,7 +163,7 @@ const Page = () => {
   }
 
   // Filter bookings
-  const filteredData = data?.data?.filter((booking: Booking) => {
+  const filteredData = (data?.data as unknown as BookingResponse[])?.filter((booking: BookingResponse) => {
     const nameMatch = filters.name
       ? booking.personalInfo.name.toLowerCase().includes(filters.name.toLowerCase())
       : true
@@ -230,12 +230,12 @@ const Page = () => {
       {/* Important Stats */}
       <Row gutter={16} style={{ marginBottom: 20 }}>
         <Col span={12}>
-          <Statistic title="Total Bookings" value={data?.total || 0} />
+          <Statistic title="Total Bookings" value={data?.pagination?.total || 0} />
         </Col>
         <Col span={12}>
           <Statistic
             title="Total Revenue"
-            value={`Rs. ${data?.data.reduce((sum: number, b: Booking) => sum + b.summary.total, 0) || 0}`}
+            value={`Rs. ${(data?.data as unknown as BookingResponse[])?.reduce((sum: number, b: BookingResponse) => sum + b.summary.total, 0) || 0}`}
           />
         </Col>
       </Row>
@@ -341,7 +341,7 @@ const Page = () => {
               disabled={!selectedCategory}
               allowClear
             >
-              {items?.items?.map((item: any) => (
+              {items?.data?.map((item: any) => (
                 <Option key={item._id} value={JSON.stringify(item)}>
                   {item.title}
                 </Option>
@@ -433,7 +433,7 @@ const Page = () => {
           </Form.Item>
 
           {/* Submit Button */}
-          <Button type="primary" htmlType="submit" block loading={mutation.isLoading}>
+          <Button type="primary" htmlType="submit" block loading={mutation.isPending}>
             Create Booking
           </Button>
         </Form>

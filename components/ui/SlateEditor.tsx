@@ -67,12 +67,12 @@ const initialValue = [
 
 // Custom editor functions
 const CustomEditor = {
-  isMarkActive(editor, format) {
-    const marks = Editor.marks(editor)
+  isMarkActive(editor: Editor, format: string) {
+    const marks = Editor.marks(editor) as any
     return marks ? marks[format] === true : false
   },
 
-  toggleMark(editor, format) {
+  toggleMark(editor: Editor, format: string) {
     const isActive = CustomEditor.isMarkActive(editor, format)
 
     if (isActive) {
@@ -82,21 +82,21 @@ const CustomEditor = {
     }
   },
 
-  isBlockActive(editor, format, blockType = "type") {
+  isBlockActive(editor: Editor, format: string, blockType: string = "type") {
     const { selection } = editor
     if (!selection) return false
 
     const [match] = Array.from(
       Editor.nodes(editor, {
         at: Editor.unhangRange(editor, selection),
-        match: (n) => !Editor.isEditor(n) && SlateElement.isElement(n) && n[blockType] === format,
+        match: (n) => !Editor.isEditor(n) && SlateElement.isElement(n) && (n as any)[blockType] === format,
       }),
     )
 
     return !!match
   },
 
-  toggleBlock(editor, format, blockType = "type") {
+  toggleBlock(editor: Editor, format: string, blockType: string = "type") {
     const isActive = CustomEditor.isBlockActive(editor, format, blockType)
     const isList = format === ELEMENT_TYPES.NUMBERED_LIST || format === ELEMENT_TYPES.BULLETED_LIST
 
@@ -104,23 +104,23 @@ const CustomEditor = {
       match: (n) =>
         !Editor.isEditor(n) &&
         SlateElement.isElement(n) &&
-        [ELEMENT_TYPES.NUMBERED_LIST, ELEMENT_TYPES.BULLETED_LIST].includes(n.type),
+        [ELEMENT_TYPES.NUMBERED_LIST, ELEMENT_TYPES.BULLETED_LIST].includes((n as any).type),
       split: true,
     })
 
-    const newProperties = {
+    const newProperties: any = {
       type: isActive ? ELEMENT_TYPES.PARAGRAPH : isList ? ELEMENT_TYPES.LIST_ITEM : format,
     }
 
     Transforms.setNodes(editor, newProperties)
 
     if (!isActive && isList) {
-      const block = { type: format, children: [] }
+      const block: any = { type: format, children: [] }
       Transforms.wrapNodes(editor, block)
     }
   },
 
-  toggleAlign(editor, align) {
+  toggleAlign(editor: Editor, align: string) {
     const { selection } = editor
     if (!selection) return
 
@@ -133,19 +133,19 @@ const CustomEditor = {
 
     if (match) {
       const [node] = match
-      const currentAlign = node.align || TEXT_ALIGN_TYPES.LEFT
+      const currentAlign = (node as any).align || TEXT_ALIGN_TYPES.LEFT
       const newAlign = currentAlign === align ? TEXT_ALIGN_TYPES.LEFT : align
 
       Transforms.setNodes(
         editor,
-        { align: newAlign },
+        { align: newAlign } as any,
         { match: (n) => !Editor.isEditor(n) && SlateElement.isElement(n) },
       )
     }
   },
 
-  insertImage(editor, url, alt = "", width = "100%", align = "center") {
-    const image = {
+  insertImage(editor: Editor, url: string, alt: string = "", width: string = "100%", align: string = "center") {
+    const image: any = {
       type: ELEMENT_TYPES.IMAGE,
       url,
       alt,
@@ -171,16 +171,16 @@ const CustomEditor = {
       if (!nextPath) {
         Transforms.insertNodes(
           editor,
-          { type: ELEMENT_TYPES.PARAGRAPH, children: [{ text: "" }] },
+          { type: ELEMENT_TYPES.PARAGRAPH, children: [{ text: "" }] } as any,
           { at: Editor.end(editor, []) },
         )
       }
     }
   },
 
-  insertLink(editor, url, text) {
+  insertLink(editor: Editor, url: string, text: string) {
     if (editor.selection) {
-      const link = {
+      const link: any = {
         type: ELEMENT_TYPES.LINK,
         url,
         children: [{ text }],
@@ -197,15 +197,15 @@ const CustomEditor = {
 }
 
 // Slate plugins
-const withImages = (editor) => {
+const withImages = (editor: ReactEditor) => {
   const { isVoid, deleteBackward } = editor
 
-  editor.isVoid = (element) => {
+  editor.isVoid = (element: any) => {
     return element.type === ELEMENT_TYPES.IMAGE ? true : isVoid(element)
   }
 
   // Override the deleteBackward method to handle image deletion
-  editor.deleteBackward = (unit) => {
+  editor.deleteBackward = (unit: any) => {
     const { selection } = editor
 
     if (selection && Range.isCollapsed(selection)) {
@@ -213,7 +213,7 @@ const withImages = (editor) => {
       const [prevNode, prevPath] = Editor.previous(editor, { at: path }) || []
 
       // If the previous node is an image, we need to handle it specially
-      if (prevNode && prevNode.type === ELEMENT_TYPES.IMAGE) {
+      if (prevNode && prevPath && (prevNode as any).type === ELEMENT_TYPES.IMAGE) {
         // Select the image node
         Transforms.select(editor, prevPath)
         // Show a confirmation dialog
@@ -235,7 +235,7 @@ const withImages = (editor) => {
 }
 
 // Element component to render different block types
-const Element = ({ attributes, children, element }) => {
+const Element = ({ attributes, children, element }: any) => {
   const style = element.align ? { textAlign: element.align } : {}
 
   switch (element.type) {
@@ -329,28 +329,28 @@ const Element = ({ attributes, children, element }) => {
 }
 
 // Image element with controls
-const ImageElement = ({ attributes, children, element }) => {
-  const editor = useSlate()
+const ImageElement = ({ attributes, children, element }: any) => {
+  const editor = useSlate() as ReactEditor
   const selected = useSelected(element)
   const [showControls, setShowControls] = useState(false)
   const [size, setSize] = useState(element.width || "100%")
   const [alignment, setAlignment] = useState(element.align || "center")
 
-  const alignmentStyles = {
+  const alignmentStyles: any = {
     left: { float: "left", marginRight: 16, marginBottom: 8 },
     center: { margin: "0 auto", display: "block" },
     right: { float: "right", marginLeft: 16, marginBottom: 8 },
   }
 
-  const updateImageSize = (newSize) => {
+  const updateImageSize = (newSize: string) => {
     const path = ReactEditor.findPath(editor, element)
-    Transforms.setNodes(editor, { width: newSize }, { at: path })
+    Transforms.setNodes(editor, { width: newSize } as any, { at: path })
     setSize(newSize)
   }
 
-  const updateImageAlignment = (newAlign) => {
+  const updateImageAlignment = (newAlign: string) => {
     const path = ReactEditor.findPath(editor, element)
-    Transforms.setNodes(editor, { align: newAlign }, { at: path })
+    Transforms.setNodes(editor, { align: newAlign } as any, { at: path })
     setAlignment(newAlign)
   }
 
@@ -430,8 +430,8 @@ const ImageElement = ({ attributes, children, element }) => {
 }
 
 // Custom hook to check if an element is selected
-const useSelected = (element) => {
-  const editor = useSlate()
+const useSelected = (element: any) => {
+  const editor = useSlate() as ReactEditor
   const { selection } = editor
 
   if (!selection) return false
@@ -450,7 +450,7 @@ const useSelected = (element) => {
 }
 
 // Leaf component to render text with marks
-const Leaf = ({ attributes, children, leaf }) => {
+const Leaf = ({ attributes, children, leaf }: any) => {
   if (leaf.bold) {
     children = <strong>{children}</strong>
   }
@@ -694,12 +694,12 @@ const Toolbar = () => {
 // Main editor component
 export default function RichTextEditor() {
   const editor = useMemo(() => withHistory(withImages(withReact(createEditor()))), [])
-  const [value, setValue] = useState(initialValue)
+  const [value, setValue] = useState<any>(initialValue)
 
   // Convert Slate state to HTML for preview
-  const renderToHtml = useCallback((nodes) => {
+  const renderToHtml = useCallback((nodes: any[]) => {
     return nodes
-      .map((node) => {
+      .map((node: any) => {
         if (node.type === ELEMENT_TYPES.IMAGE) {
           const alignStyle =
             node.align === "left"
@@ -715,55 +715,55 @@ export default function RichTextEditor() {
 
         if (node.type === ELEMENT_TYPES.LINK) {
           return `<a href="${node.url}" target="_blank" rel="noopener noreferrer" style="color: #1890ff; text-decoration: underline;">
-            ${node.children.map((child) => child.text).join("")}
+            ${node.children.map((child: any) => child.text).join("")}
           </a>`
         }
 
         if (node.type === ELEMENT_TYPES.HEADING_ONE) {
           return `<h1 style="text-align: ${node.align || "left"}; font-size: 28px; font-weight: bold; margin-top: 24px; margin-bottom: 16px;">
-            ${node.children.map((child) => renderLeaf(child)).join("")}
+            ${node.children.map((child: any) => renderLeaf(child)).join("")}
           </h1>`
         }
 
         if (node.type === ELEMENT_TYPES.HEADING_TWO) {
           return `<h2 style="text-align: ${node.align || "left"}; font-size: 22px; font-weight: bold; margin-top: 20px; margin-bottom: 12px;">
-            ${node.children.map((child) => renderLeaf(child)).join("")}
+            ${node.children.map((child: any) => renderLeaf(child)).join("")}
           </h2>`
         }
 
         if (node.type === ELEMENT_TYPES.BLOCK_QUOTE) {
           return `<blockquote style="text-align: ${node.align || "left"}; border-left: 4px solid #d9d9d9; padding-left: 16px; padding-top: 8px; padding-bottom: 8px; margin: 16px 0; font-style: italic; color: #595959;">
-            ${node.children.map((child) => renderLeaf(child)).join("")}
+            ${node.children.map((child: any) => renderLeaf(child)).join("")}
           </blockquote>`
         }
 
         if (node.type === ELEMENT_TYPES.NUMBERED_LIST) {
           return `<ol style="text-align: ${node.align || "left"}; margin-left: 24px; margin-top: 16px; margin-bottom: 16px;">
-            ${node.children.map((child) => `<li>${child.children.map((grandChild) => renderLeaf(grandChild)).join("")}</li>`).join("")}
+            ${node.children.map((child: any) => `<li>${child.children.map((grandChild: any) => renderLeaf(grandChild)).join("")}</li>`).join("")}
           </ol>`
         }
 
         if (node.type === ELEMENT_TYPES.BULLETED_LIST) {
           return `<ul style="text-align: ${node.align || "left"}; margin-left: 24px; margin-top: 16px; margin-bottom: 16px;">
-            ${node.children.map((child) => `<li>${child.children.map((grandChild) => renderLeaf(grandChild)).join("")}</li>`).join("")}
+            ${node.children.map((child: any) => `<li>${child.children.map((grandChild: any) => renderLeaf(grandChild)).join("")}</li>`).join("")}
           </ul>`
         }
 
         if (node.type === ELEMENT_TYPES.CODE_BLOCK) {
           return `<pre style="background-color: #f5f5f5; padding: 16px; border-radius: 4px; margin: 16px 0; font-family: monospace; font-size: 14px; overflow-x: auto;">
-            <code>${node.children.map((child) => renderLeaf(child)).join("")}</code>
+            <code>${node.children.map((child: any) => renderLeaf(child)).join("")}</code>
           </pre>`
         }
 
         // Default paragraph
         return `<p style="text-align: ${node.align || "left"}; margin: 12px 0;">
-          ${node.children.map((child) => renderLeaf(child)).join("")}
+          ${node.children.map((child: any) => renderLeaf(child)).join("")}
         </p>`
       })
       .join("")
   }, [])
 
-  const renderLeaf = useCallback((leaf) => {
+  const renderLeaf = useCallback((leaf: any) => {
     let text = leaf.text
 
     if (leaf.bold) {

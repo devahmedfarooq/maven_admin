@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
 export async function signin(prevState: SigninFormState, formData: FormData): Promise<SigninFormState> {
 
     const backendAPI = axios.create({
-        baseURL: 'http://localhost:3000'
+        baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
     })
 
     try {
@@ -29,11 +29,20 @@ export async function signin(prevState: SigninFormState, formData: FormData): Pr
         }
 
         const data = validatedValues.data;
-        const user = (await backendAPI.post("/auth/admin-login", data)).data;
+        const response = (await backendAPI.post("/auth/admin-login", data)).data;
 
-        if(user) {
-            const retrivedData = user.token
-            await createSession(retrivedData)
+        console.log('User data received from backend:', response);
+
+        if(response && response.token) {
+            // Backend returns nested structure: { token: { token: 'jwt...', verified: false, email: '...', id: '...' } }
+            const sessionPayload = {
+                token: response.token.token,
+                verified: String(response.token.verified),
+                email: response.token.email,
+                id: response.token.id
+            };
+            console.log('Creating session for user.');
+            await createSession(sessionPayload);
         }
       //  redirect('/dashboard');
 

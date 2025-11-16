@@ -27,10 +27,11 @@ export async function decrypt(session: string | undefined = '') {
 }
 
 export async function createSession(payLoad: SessionPayload) {
-    const expireAt = new Date(Date.now() * 7 * 24 * 60 * 60 * 1000)
+    const expireAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     const session = await encrypt(payLoad)
     const CookieStore = await cookies()
 
+    console.log('Setting session cookie with expiration:', expireAt);
     CookieStore.set('session' , session, {
         httpOnly : true,
         secure : true,
@@ -38,6 +39,7 @@ export async function createSession(payLoad: SessionPayload) {
         sameSite : 'lax',
         path : '/'
     })
+    console.log('Session cookie set successfully');
 }
 
 

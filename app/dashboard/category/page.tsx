@@ -35,11 +35,14 @@ interface Category {
   name: string
   hasSubType: boolean
   subName: string[]
+  appointmentDateLabel?: string
+  appointmentTimeLabel?: string
   appointmentStartDateLabel?: string
   appointmentStartTimeLabel?: string
   appointmentEndDateLabel?: string
   appointmentEndTimeLabel?: string
   appointmentDescription?: string
+  requiresAppointment?: boolean
   requiresDuration?: boolean
   icon?: string
 }

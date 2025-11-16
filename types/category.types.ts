@@ -9,6 +9,15 @@ export interface Category extends BaseEntity {
   active?: boolean;
   featured?: boolean;
   itemCount?: number;
+  appointmentDateLabel?: string;
+  appointmentTimeLabel?: string;
+  appointmentStartDateLabel?: string;
+  appointmentStartTimeLabel?: string;
+  appointmentEndDateLabel?: string;
+  appointmentEndTimeLabel?: string;
+  appointmentDescription?: string;
+  requiresAppointment?: boolean;
+  requiresDuration?: boolean;
 }
 
 export interface CategoryFormData {

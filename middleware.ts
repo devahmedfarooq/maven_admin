@@ -5,6 +5,12 @@ import { cookies } from 'next/headers';
 export async function middleware(request: NextRequest) {
   const cookieStore = await cookies();
   const session = cookieStore.get('session')?.value;
+  const allCookies = cookieStore.getAll();
+
+  console.log('Middleware - Path:', request.nextUrl.pathname);
+  console.log('Middleware - Session exists:', !!session);
+  console.log('Middleware - Full URL:', request.url);
+  console.log('Middleware - All cookies:', allCookies.map(c => c.name));
 
   const { pathname } = request.nextUrl;
 

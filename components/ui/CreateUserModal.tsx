@@ -19,7 +19,7 @@ interface FormValues {
 export default function CreateUserModal({ visible, onClose, onUserCreated }: CreateUserModalProps) {
     const [form] = Form.useForm<FormValues>();
 
-    const { mutate, isLoading } = useMutation({
+    const { mutate, isPending } = useMutation({
         mutationFn: async (values: FormValues) => {
             return axios.post("/auth/register", values)
         },
@@ -30,7 +30,7 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
             onUserCreated();
             onClose();
         },
-        onError: (error) => {
+        onError: (error: any) => {
             message.error(error.response?.data?.message || "Failed to create user");
         }
     }
@@ -81,7 +81,7 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
                     <Input.Password placeholder="Enter password" />
                 </Form.Item>
                 <Form.Item>
-                    <Button type="primary" htmlType="submit" loading={isLoading}>
+                    <Button type="primary" htmlType="submit" loading={isPending}>
                         Create User
                     </Button>
                 </Form.Item>
