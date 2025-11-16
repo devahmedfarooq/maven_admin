@@ -1,10 +1,11 @@
 'use client';
 
 import { useActionState, useEffect, useRef } from 'react';
-import { redirect, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Typography, Card, message, Spin } from 'antd';
 import { SigninFormState } from '@/app/lib/definations';
 import { signin } from '@/app/actions/auth';
+import { isAuthenticated } from '@/app/lib/get-token';
 
 const { Title } = Typography;
 
@@ -19,6 +20,13 @@ const AuthPage = () => {
 
     const firstRender = useRef(true);
 
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated()) {
+            router.push('/dashboard');
+        }
+    }, [router]);
+
     useEffect(() => {
         if (firstRender.current) {
             firstRender.current = false;
@@ -28,8 +36,7 @@ const AuthPage = () => {
         if (!isPending) {
             if (state?.msg) {
                 message.success(state.msg);
-                // Use router.push for client-side navigation as fallback
-                // Server-side redirect in auth.ts should handle this primarily
+                // Redirect to dashboard after successful login
                 setTimeout(() => {
                     router.push('/dashboard');
                 }, 500);

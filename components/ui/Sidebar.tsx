@@ -22,9 +22,9 @@ export default function SidebarMenu() {
   const router = useRouter();
   const [selectedKey, setSelectedKey] = useState("home");
 
-  const handleClick = async (e:any) => {
+  const handleClick = (e:any) => {
     if(e.key == 'logout') {
-      await logout()
+      logout()
       return 
     }
     setSelectedKey(e.key);
