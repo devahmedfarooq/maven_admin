@@ -34,7 +34,7 @@ export async function createSession(payLoad: SessionPayload) {
     console.log('Setting session cookie with expiration:', expireAt);
     CookieStore.set('session' , session, {
         httpOnly : true,
-        secure : true,
+        secure : process.env.NODE_ENV === 'production',
         expires : expireAt,
         sameSite : 'lax',
         path : '/'
@@ -56,7 +56,7 @@ export async function updateSession() {
     const cookieStore = await cookies()
     cookieStore.set('session', session, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       expires: expires,
       sameSite: 'lax',
       path: '/',

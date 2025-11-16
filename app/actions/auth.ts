@@ -43,8 +43,8 @@ export async function signin(prevState: SigninFormState, formData: FormData): Pr
             };
             console.log('Creating session for user.');
             await createSession(sessionPayload);
+            redirect('/dashboard');
         }
-      //  redirect('/dashboard');
 
         return { msg: 'User has been logged in' };
     } catch (err: any) {

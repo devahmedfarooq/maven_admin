@@ -28,15 +28,18 @@ const AuthPage = () => {
         if (!isPending) {
             if (state?.msg) {
                 message.success(state.msg);
-
-                redirect('/dashboard')
+                // Use router.push for client-side navigation as fallback
+                // Server-side redirect in auth.ts should handle this primarily
+                setTimeout(() => {
+                    router.push('/dashboard');
+                }, 500);
             } else if (state?.error && (state.error.email.length > 0 || state.error.password.length > 0)) {
                 const emailErrors = state.error.email.join('\n');
                 const passwordErrors = state.error.password.join('\n');
                 message.error(`Login Failed:\n${emailErrors}\n${passwordErrors}`);
             }
         }
-    }, [state, isPending]);
+    }, [state, isPending, router]);
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-100">
@@ -58,7 +61,7 @@ const AuthPage = () => {
                                 required
                                 style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                             />
-                            {state?.error?.email?.map((err, i) => (
+                            {state?.error?.email?.map((err: string, i: number) => (
                                 <p key={i} style={{ color: 'red', margin: 0 }}>{err}</p>
                             ))}
                         </div>
@@ -73,7 +76,7 @@ const AuthPage = () => {
                                 required
                                 style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                             />
-                            {state?.error?.password?.map((err, i) => (
+                            {state?.error?.password?.map((err: string, i: number) => (
                                 <p key={i} style={{ color: 'red', margin: 0 }}>{err}</p>
                             ))}
                         </div>
