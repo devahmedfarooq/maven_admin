@@ -19,17 +19,17 @@ interface BlogData {
 }
 
 const fetchBlog = async (id: string) => {
-  const { data } = await axios.get(`http://localhost:3000/blogs/${id}`);
+  const { data } = await axios.get( process.env.NEXT_PUBLIC_API_URL + `/blogs/${id}`);
   return data;
 };
 
 const updateBlog = async ({ id, values }: { id: string; values: BlogData }) => {
-  const { data } = await axios.put(`http://localhost:3000/blogs/${id}`, values);
+  const { data } = await axios.put(process.env.NEXT_PUBLIC_API_URL + `/blogs/${id}`, values);
   return data;
 };
 
 const deleteBlog = async (id: string) => {
-  await axios.delete(`http://localhost:3000/blogs/${id}`);
+  await axios.delete(process.env.NEXT_PUBLIC_API_URL + `/blogs/${id}`);
 };
 
 export default function BlogPage() {
