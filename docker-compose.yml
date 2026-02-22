@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  admin:
+    build: .
+    container_name: mavens-admin
+    ports:
+      - "3001:3001"
+    environment:
+      # ❌ DO NOT USE localhost:3000 inside a container
+      # ✅ Use the service name of the backend container
+      - API_URL=http://mavens-api:3000 
+    networks:
+      - mavens-network
+
+networks:
+  mavens-network:
+    external: true # <--- Joins the same network as backend
