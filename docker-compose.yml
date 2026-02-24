@@ -8,9 +8,10 @@ services:
     environment:
       # ❌ DO NOT USE localhost:3000 inside a container
       # ✅ Use the service name of the backend container
-      - NEXT_PUBLIC_API_URL=ec2-16-171-246-196.eu-north-1.compute.amazonaws.com/api
+      - NEXT_PUBLIC_API_URL=http://ec2-16-171-246-196.eu-north-1.compute.amazonaws.com/api
     env_file:
       - ~/apps/next/.env
+     #- ~/apps/next/.env
     networks:
       - mavens-network
 
