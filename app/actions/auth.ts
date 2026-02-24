@@ -1,9 +1,5 @@
-"use server";
 import axios from 'axios';
-import { revalidatePath } from 'next/cache';
 import { SigninSchema, SigninFormState } from '@/app/lib/definations';
-import { createSession, decrypt, deleteSession } from '../lib/session';
-import { redirect } from 'next/navigation';
 
 export async function signin(prevState: SigninFormState, formData: FormData): Promise<SigninFormState> {
 
@@ -29,14 +25,29 @@ export async function signin(prevState: SigninFormState, formData: FormData): Pr
         }
 
         const data = validatedValues.data;
-        const user = (await backendAPI.post("/auth/admin-login", data)).data;
+        const response = (await backendAPI.post("/auth/admin-login", data)).data;
 
-        console.log("User data received from backend:", user);
-        if(user) {
-            console.log("Creating session for user.");
-            const retrivedData = user.token
-            await createSession(retrivedData)
-            redirect('/dashboard');
+        console.log('User data received from backend:', response);
+
+        if(response && response.token) {
+            // Backend returns nested structure: { token: { token: 'jwt...', verified: false, email: '...', id: '...' } }
+            const sessionData = {
+                token: response.token.token,
+                verified: String(response.token.verified),
+                email: response.token.email,
+                id: response.token.id
+            };
+            console.log('Storing auth data in localStorage');
+            
+            // Store in localStorage
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('authToken', sessionData.token);
+                localStorage.setItem('userEmail', sessionData.email);
+                localStorage.setItem('userId', sessionData.id);
+                localStorage.setItem('userVerified', sessionData.verified);
+            }
+            
+            return { msg: 'Login successful. Redirecting...' };
         }
 
         return { msg: 'User has been logged in' };
@@ -46,7 +57,12 @@ export async function signin(prevState: SigninFormState, formData: FormData): Pr
 }
 
 
-export async function logout() {
-    deleteSession()
-    redirect('/auth')
-  }
+export function logout() {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userVerified');
+        window.location.href = '/auth';
+    }
+}

@@ -2,24 +2,20 @@
 import Sidebar from '@/components/ui/Sidebar'
 import { Layout } from 'antd'
 import { useEffect } from 'react'
-import { getToken } from '../lib/get-token'
+import { useRouter } from 'next/navigation'
+import { isAuthenticated } from '../lib/get-token'
 
 const { Sider, Content } = Layout
 
 export default function Layoutd({ children }: { children: React.ReactNode }) {
+    const router = useRouter();
 
     useEffect(() => {
-
-        async function setLocalStorage() {
-            const token = await getToken()
-            if (token) {
-                localStorage.setItem("authToken", token)
-            }
+        // Check if user is authenticated
+        if (!isAuthenticated()) {
+            router.push('/auth');
         }
-
-        setLocalStorage()
-
-    }, [])
+    }, [router]);
 
     return (
         <Layout className="h-screen overflow-hidden">

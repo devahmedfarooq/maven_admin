@@ -16,6 +16,8 @@ export interface Category extends BaseEntity {
   appointmentEndDateLabel?: string;
   appointmentEndTimeLabel?: string;
   appointmentDescription?: string;
+  requiresAppointment?: boolean;
+  requiresDuration?: boolean;
 }
 
 export interface CategoryFormData {

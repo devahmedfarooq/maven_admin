@@ -42,6 +42,7 @@ interface Category {
   appointmentEndDateLabel?: string
   appointmentEndTimeLabel?: string
   appointmentDescription?: string
+  requiresAppointment?: boolean
   requiresDuration?: boolean
   requiresAppointment?: boolean
   icon?: string

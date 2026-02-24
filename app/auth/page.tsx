@@ -1,10 +1,11 @@
 'use client';
 
 import { useActionState, useEffect, useRef } from 'react';
-import { redirect, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Typography, Card, message, Spin } from 'antd';
 import { SigninFormState } from '@/app/lib/definations';
 import { signin } from '@/app/actions/auth';
+import { isAuthenticated } from '@/app/lib/get-token';
 
 const { Title } = Typography;
 
@@ -19,6 +20,13 @@ const AuthPage = () => {
 
     const firstRender = useRef(true);
 
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated()) {
+            router.push('/dashboard');
+        }
+    }, [router]);
+
     useEffect(() => {
         if (firstRender.current) {
             firstRender.current = false;
@@ -28,14 +36,17 @@ const AuthPage = () => {
         if (!isPending) {
             if (state?.msg) {
                 message.success(state.msg);
-                // Redirect is now handled server-side in the signin action
+                // Redirect to dashboard after successful login
+                setTimeout(() => {
+                    router.push('/dashboard');
+                }, 500);
             } else if (state?.error && (state.error.email.length > 0 || state.error.password.length > 0)) {
                 const emailErrors = state.error.email.join('\n');
                 const passwordErrors = state.error.password.join('\n');
                 message.error(`Login Failed:\n${emailErrors}\n${passwordErrors}`);
             }
         }
-    }, [state, isPending]);
+    }, [state, isPending, router]);
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-100">
@@ -57,7 +68,7 @@ const AuthPage = () => {
                                 required
                                 style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                             />
-                            {state?.error?.email?.map((err, i) => (
+                            {state?.error?.email?.map((err: string, i: number) => (
                                 <p key={i} style={{ color: 'red', margin: 0 }}>{err}</p>
                             ))}
                         </div>
@@ -72,7 +83,7 @@ const AuthPage = () => {
                                 required
                                 style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                             />
-                            {state?.error?.password?.map((err, i) => (
+                            {state?.error?.password?.map((err: string, i: number) => (
                                 <p key={i} style={{ color: 'red', margin: 0 }}>{err}</p>
                             ))}
                         </div>
