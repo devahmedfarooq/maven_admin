@@ -24,21 +24,23 @@ jobs:
       - name: Create external network (if not exists)
         run: docker network create mavens-network 2>/dev/null || true
 
-      - name: Start services
+      - name: 🚀 Start services
         run: |
-         cd ~/apps/next
-         
-         echo "Stopping old containers..."
-         docker compose down
-         
-         echo "Starting services with Docker Compose..."
+          # 1. Copy your server's .env file into the current GitHub workspace
+          # This ensures Docker Compose finds it in the same folder as the YAML
+          cp ~/apps/next/.env ./.env
+          
+          echo "Stopping old containers..."
+          docker compose down
+          
+          echo "Starting services with Docker Compose..."
+          # We use --build here to ensure the NEXT_PUBLIC vars are baked in
+          # from the .env file we just copied!
+          docker compose up --build -d
 
-         docker compose up --build -d
-
-         echo "Cleaning up old images..."
-         docker image prune -f
-
-         echo "✅ Services started successfully!"
-
+          echo "Cleaning up..."
+          docker image prune -f
+          echo "✅ Services started successfully!"
+      
       - name: Check running containers
         run: docker ps
