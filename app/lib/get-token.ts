@@ -1,22 +1,26 @@
-// lib/get-auth-headers.ts
-"use server";
+// lib/get-token.ts
 
-import { decrypt } from "@/app/lib/session";
-import { cookies } from "next/headers";
-
-export async function getToken() {
-    const cookieStore = await cookies();
-    const session = cookieStore.get("session")?.value;
-
-    if (!session) return null;
-
-    const payload = await decrypt(session);
-    if (payload?.token) {
-        /* return {
-            Authorization: `Bearer ${payload.token}`
-        }; */
-        return String(payload.token) 
+export function getToken(): string | null {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem('authToken');
     }
-
     return null;
+}
+
+export function getUserData() {
+    if (typeof window !== 'undefined') {
+        return {
+            email: localStorage.getItem('userEmail'),
+            id: localStorage.getItem('userId'),
+            verified: localStorage.getItem('userVerified') === 'true'
+        };
+    }
+    return null;
+}
+
+export function isAuthenticated(): boolean {
+    if (typeof window !== 'undefined') {
+        return !!localStorage.getItem('authToken');
+    }
+    return false;
 }

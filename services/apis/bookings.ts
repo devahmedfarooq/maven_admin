@@ -31,8 +31,20 @@ const fetchCategories = async (message: MessageInstance): Promise<any[]> => {
 const fetchItemsByCategory = async (categoryType: string, page: number, limit: number, message: MessageInstance): Promise<PaginatedResponse<any>> => {
   try {
     const { data } = await api.get(`/items?type=${categoryType}&page=${page}&limit=${limit}`)
+    // Backend returns { items: [...], ...otherFields }, transform to PaginatedResponse
     if (!data?.items?.length) return { data: [], pagination: { total: 0, page, limit, totalPages: 0, hasNextPage: false, hasPrevPage: false } }
-    return data
+    
+    return {
+      data: data.items,
+      pagination: {
+        total: data.total || data.items.length,
+        page: data.page || page,
+        limit: data.limit || limit,
+        totalPages: data.totalPages || 1,
+        hasNextPage: data.hasNextPage || false,
+        hasPrevPage: data.hasPrevPage || false
+      }
+    }
   } catch (error: any) {
     message.error(`Error fetching items for category: ${categoryType}`)
     throw new Error(`Failed to fetch items for category: ${categoryType}`)

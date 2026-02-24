@@ -30,7 +30,7 @@ const { Title } = Typography
 const { Option } = Select
 const { RangePicker } = DatePicker
 
-interface BookingData {
+interface BookingResponse {
   _id: string
   personalInfo: {
     name: string
@@ -163,7 +163,7 @@ const Page = () => {
   }
 
   // Filter bookings
-  const filteredData = data?.data?.filter((booking: any) => {
+  const filteredData = (data?.data as unknown as BookingResponse[])?.filter((booking: BookingResponse) => {
     const nameMatch = filters.name
       ? booking.personalInfo.name.toLowerCase().includes(filters.name.toLowerCase())
       : true
@@ -235,13 +235,18 @@ const Page = () => {
         <Col span={12}>
           <Statistic
             title="Total Revenue"
-            value={`Rs. ${data?.data.reduce((sum: number, b: any) => sum + b.summary.total, 0) || 0}`}
+            value={`Rs. ${(data?.data as unknown as BookingResponse[])?.reduce((sum: number, b: BookingResponse) => sum + b.summary.total, 0) || 0}`}
           />
         </Col>
       </Row>
 
       {/* Filter Form */}
-      <Form form={filterForm} layout="inline"  onValuesChange={handleFilterChange} style={{ marginBottom: 20 }}>
+      <Form 
+        form={filterForm} 
+        layout="inline" 
+        onValuesChange={handleFilterChange} 
+        style={{ marginBottom: 20 }}
+      >
         <Form.Item label="Name" name="name">
           <Input placeholder="Filter by name" />
         </Form.Item>
@@ -341,7 +346,7 @@ const Page = () => {
               disabled={!selectedCategory}
               allowClear
             >
-              {(items as any)?.items?.map((item: any) => (
+              {items?.data?.map((item: any) => (
                 <Option key={item._id} value={JSON.stringify(item)}>
                   {item.title}
                 </Option>

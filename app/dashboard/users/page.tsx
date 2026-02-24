@@ -18,12 +18,16 @@ export default function Page() {
         refetch();
     }, [page, pageSize]);
 
-    const dataSource = (data as any)?.users?.map((user: any) => ({
+    // Handle both API response formats: {data, pagination} or {users, totalUsers, etc}
+    const users = (data as any)?.users || data?.data || [];
+    const totalUsers = (data as any)?.totalUsers || data?.pagination?.total || 0;
+
+    const dataSource = users.map((user: any) => ({
         key: user._id,
         name: user.name,
         email: user.email,
         image: user.image
-    })) || [];
+    }));
 
     const columns = [
         {
@@ -40,7 +44,7 @@ export default function Page() {
             title: "Profile Image",
             dataIndex: "image",
             key: "image",
-            render: (image: any, record: any) =>
+            render: (image: string | undefined, record: { name: string }) =>
                 image ? (
                     <img className="w-10 h-10 rounded-full border border-gray-300 shadow-sm" src={image} alt={record.name} />
                 ) : (
@@ -49,7 +53,7 @@ export default function Page() {
         },
         {
             title: "Details",
-            render: ({ key }: any) => <Link href={`/dashboard/users/${key}`} className="text-blue-500 hover:underline">More Details</Link>,
+            render: ({ key }: { key: string }) => <Link href={`/dashboard/users/${key}`} className="text-blue-500 hover:underline">More Details</Link>,
         },
     ];
 
@@ -58,11 +62,8 @@ export default function Page() {
             <Space direction="vertical" className="w-full" size="large">
                 {/* Stats Cards & Create User Button */}
                 <Space size="middle" className="w-full flex flex-wrap justify-start">
-                    <Card title="New Users" className="w-48 text-center">
-                        <span className="text-xl font-bold">{(data as any)?.newUsers || 0}</span>
-                    </Card>
                     <Card title="Total Users" className="w-48 text-center">
-                        <span className="text-xl font-bold">{(data as any)?.totalUsers || 0}</span>
+                        <span className="text-xl font-bold">{totalUsers}</span>
                     </Card>
                     <Button type="primary" onClick={() => setIsModalVisible(true)}>
                         Create User
@@ -87,10 +88,10 @@ export default function Page() {
                 <Pagination
                     current={page}
                     pageSize={pageSize}
-                    total={(data as any)?.totalUsers || 0}
+                    total={totalUsers}
                     onChange={(newPage, newPageSize) => {
                         setPage(newPage);
-                        setPageSize(newPageSize);
+                        setPageSize(newPageSize || 10);
                     }}
                     showSizeChanger
                     pageSizeOptions={["2", "5", "10", "20", "50"]}

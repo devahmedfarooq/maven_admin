@@ -10,12 +10,16 @@ if (!secretKey) {
 }
 const encodedKey = new TextEncoder().encode(secretKey)
 
-export async function encrypt(payLoad: any) {
-    return new SignJWT(payLoad)
-        .setProtectedHeader({ alg: 'HS256' })
-        .setIssuedAt()
-        .setExpirationTime('7d')
-        .sign(encodedKey)
+// All authentication functions have been moved to:
+// - app/lib/get-token.ts (for reading auth state)
+// - app/actions/auth.ts (for login/logout)
+
+async function encrypt(payLoad: SessionPayload) {
+  return new SignJWT(payLoad)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(encodedKey)
 }
 
 export async function decrypt(session: string | undefined = '') {
