@@ -1,0 +1,29 @@
+# .github/workflows/docker-compose.yml
+name: Run Docker Compose
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose-plugin
+
+      - name: Create external network (if not exists)
+        run: docker network create mavens-network 2>/dev/null || true
+
+      - name: Start services
+        run: docker compose up --build -d
+
+      - name: Show logs (for debugging)
+        run: docker compose logs -f &
