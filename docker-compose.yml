@@ -10,7 +10,7 @@ services:
       # ✅ Use the service name of the backend container
       - NEXT_PUBLIC_API_URL=http://ec2-16-171-246-196.eu-north-1.compute.amazonaws.com/api
     env_file:
-      - ~/apps/next/.env
+      - .env
      #- ~/apps/next/.env
     networks:
       - mavens-network

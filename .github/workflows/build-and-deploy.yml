@@ -1,4 +1,4 @@
-name: Run Docker Compose
+name: Build & Deploy Admin
 
 on:
   push:
@@ -19,7 +19,20 @@ jobs:
         run: docker network create mavens-network 2>/dev/null || true
 
       - name: Start services
-        run: docker compose up --build -d
+        run: |
+         cd ~/apps/next
+         
+         echo "Stopping old containers..."
+         docker compose down
+         
+         echo "Starting services with Docker Compose..."
+
+         docker compose up --build -d
+
+         echo "Cleaning up old images..."
+         docker image prune -f
+
+         echo "✅ Services started successfully!"
 
       - name: Check running containers
         run: docker ps
