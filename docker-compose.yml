@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   admin:
-    build: .
+    image: mavens-admin:latest
     container_name: mavens-admin
     ports:
       - "3001:3001"

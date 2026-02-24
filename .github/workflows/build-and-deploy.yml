@@ -13,6 +13,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: 🐳 Build Docker image
+        run: |
+          echo "Building Docker image..."
+          docker build -t mavens-admin:latest -f ./Dockerfile .
+
+
       # No need to apt-get install docker-compose-plugin; it's already there!
 
       - name: Create external network (if not exists)
