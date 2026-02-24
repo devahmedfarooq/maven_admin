@@ -8,7 +8,9 @@ services:
     environment:
       # ❌ DO NOT USE localhost:3000 inside a container
       # ✅ Use the service name of the backend container
-      - API_URL=http://mavens-api:3000 
+      - NEXT_PUBLIC_API_URL=http://mavens-api:3000 
+    env_file:
+      - ~/apps/next/.env
     networks:
       - mavens-network
 
