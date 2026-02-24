@@ -16,14 +16,9 @@ jobs:
       - name: 🐳 Build Docker image
         run: |
           echo "Building Docker image..."
-          docker build -t mavens-admin:latest -f ./Dockerfile .
-
-
-      # No need to apt-get install docker-compose-plugin; it's already there!
-
-      - name: Create external network (if not exists)
-        run: docker network create mavens-network 2>/dev/null || true
-
+          export NEXT_PUBLIC_API_URL=$(grep NEXT_PUBLIC_API_URL ~/apps/next/.env | cut -d '=' -f2)
+          docker build --build-arg NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL -t mavens-admin:latest -f ./Dockerfile .
+  
       - name: 🚀 Start services
         run: |
           # 1. Copy your server's .env file into the current GitHub workspace
